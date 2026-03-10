@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/supabase/admin";
-import { Resend } from "resend";
+import { BrevoClient } from "@getbrevo/brevo";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +12,7 @@ export async function GET(request: Request) {
   }
 
   const supabase = createAdminClient();
-  const resend = new Resend(process.env.RESEND_API_KEY);
+  const brevo = new BrevoClient({ apiKey: process.env.BREVO_API_KEY! });
 
   // Find users with dead man's switch enabled who have been inactive
   const { data: profiles, error } = await supabase
@@ -38,12 +38,12 @@ export async function GET(request: Request) {
       const { data: authUser } = await supabase.auth.admin.getUserById(profile.user_id);
       const ownerEmail = authUser?.user?.email || "Unknown";
 
-      // Send emergency notification email
-      await resend.emails.send({
-        from: "ZeroVault <noreply@zerovault.app>",
-        to: profile.emergency_contact_email,
+      // Send emergency notification email via Brevo
+      await brevo.transactionalEmails.sendTransacEmail({
+        sender: { name: "ZeroVault", email: process.env.BREVO_SENDER_EMAIL || "noreply@zerovault.app" },
+        to: [{ email: profile.emergency_contact_email }],
         subject: "ZeroVault — Emergency Access Notification",
-        html: `
+        htmlContent: `
           <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
             <h2 style="color: #1d4ed8;">🛡️ ZeroVault Emergency Notification</h2>
             <p>This is an automated message from <strong>ZeroVault</strong>.</p>
