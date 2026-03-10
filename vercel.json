@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/dead-man-switch",
+      "schedule": "0 8 * * *"
+    }
+  ]
+}

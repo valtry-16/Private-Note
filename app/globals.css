@@ -1,0 +1,145 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* ── Default (Blue) ── */
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 221 83% 53%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221 83% 53%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 224 71% 4%;
+    --foreground: 213 31% 91%;
+    --card: 224 71% 4%;
+    --card-foreground: 213 31% 91%;
+    --popover: 224 71% 4%;
+    --popover-foreground: 213 31% 91%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 222.2 47.4% 1.2%;
+    --secondary: 222.2 47.4% 11.2%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 223 47% 11%;
+    --muted-foreground: 215.4 16.3% 56.9%;
+    --accent: 216 34% 17%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 216 34% 17%;
+    --input: 216 34% 17%;
+    --ring: 224 76% 48%;
+  }
+
+  /* ── Emerald ── */
+  [data-color-theme="emerald"] {
+    --primary: 160 84% 39%;
+    --primary-foreground: 0 0% 100%;
+    --ring: 160 84% 39%;
+  }
+  .dark[data-color-theme="emerald"],
+  [data-color-theme="emerald"] .dark {
+    --primary: 160 67% 52%;
+    --primary-foreground: 0 0% 2%;
+    --ring: 160 67% 40%;
+  }
+
+  /* ── Rose ── */
+  [data-color-theme="rose"] {
+    --primary: 346 77% 50%;
+    --primary-foreground: 0 0% 100%;
+    --ring: 346 77% 50%;
+  }
+  .dark[data-color-theme="rose"],
+  [data-color-theme="rose"] .dark {
+    --primary: 346 77% 60%;
+    --primary-foreground: 0 0% 2%;
+    --ring: 346 77% 48%;
+  }
+
+  /* ── Violet ── */
+  [data-color-theme="violet"] {
+    --primary: 263 70% 50%;
+    --primary-foreground: 0 0% 100%;
+    --ring: 263 70% 50%;
+  }
+  .dark[data-color-theme="violet"],
+  [data-color-theme="violet"] .dark {
+    --primary: 263 70% 62%;
+    --primary-foreground: 0 0% 2%;
+    --ring: 263 70% 48%;
+  }
+
+  /* ── Amber ── */
+  [data-color-theme="amber"] {
+    --primary: 38 92% 50%;
+    --primary-foreground: 0 0% 2%;
+    --ring: 38 92% 50%;
+  }
+  .dark[data-color-theme="amber"],
+  [data-color-theme="amber"] .dark {
+    --primary: 38 92% 55%;
+    --primary-foreground: 0 0% 2%;
+    --ring: 38 92% 45%;
+  }
+
+  /* ── Cyan ── */
+  [data-color-theme="cyan"] {
+    --primary: 189 94% 43%;
+    --primary-foreground: 0 0% 100%;
+    --ring: 189 94% 43%;
+  }
+  .dark[data-color-theme="cyan"],
+  [data-color-theme="cyan"] .dark {
+    --primary: 189 94% 53%;
+    --primary-foreground: 0 0% 2%;
+    --ring: 189 94% 40%;
+  }
+
+  /* ── Crimson ── */
+  [data-color-theme="crimson"] {
+    --primary: 0 72% 51%;
+    --primary-foreground: 0 0% 100%;
+    --ring: 0 72% 51%;
+  }
+  .dark[data-color-theme="crimson"],
+  [data-color-theme="crimson"] .dark {
+    --primary: 0 72% 60%;
+    --primary-foreground: 0 0% 2%;
+    --ring: 0 72% 48%;
+  }
+
+  /* ── Radius overrides ── */
+  [data-radius="0"] { --radius: 0rem; }
+  [data-radius="0.3"] { --radius: 0.3rem; }
+  [data-radius="0.5"] { --radius: 0.5rem; }
+  [data-radius="0.75"] { --radius: 0.75rem; }
+  [data-radius="1"] { --radius: 1rem; }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
