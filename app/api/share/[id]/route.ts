@@ -21,7 +21,12 @@ export async function GET(
     .single();
 
   if (error || !link) {
-    return NextResponse.json({ error: "Link not found" }, { status: 404 });
+    // If the table doesn't exist or no row found
+    console.error("Share link lookup error:", error?.message || "Not found");
+    return NextResponse.json(
+      { error: error?.code === "PGRST116" ? "Link not found" : "Link not found or service unavailable" },
+      { status: 404 }
+    );
   }
 
   // Check expiry

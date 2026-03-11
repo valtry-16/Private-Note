@@ -8,9 +8,9 @@ const supabaseAdmin = createClient(
 );
 
 export async function POST(req: NextRequest) {
-  const { userId, token } = await req.json();
-  if (!userId || !token) {
-    return NextResponse.json({ error: "Missing userId or token" }, { status: 400 });
+  const { userId, token, action } = await req.json();
+  if (!userId) {
+    return NextResponse.json({ error: "Missing userId" }, { status: 400 });
   }
 
   const { data: profile } = await supabaseAdmin
@@ -19,8 +19,17 @@ export async function POST(req: NextRequest) {
     .eq("user_id", userId)
     .single();
 
+  // Check-only mode: just return whether 2FA is enabled
+  if (action === "check") {
+    return NextResponse.json({ enabled: !!profile?.totp_enabled });
+  }
+
+  if (!token) {
+    return NextResponse.json({ error: "Missing token" }, { status: 400 });
+  }
+
   if (!profile?.totp_enabled || !profile?.totp_secret) {
-    return NextResponse.json({ error: "2FA not enabled" }, { status: 400 });
+    return NextResponse.json({ enabled: false, error: "2FA not enabled" });
   }
 
   const isValid = verifySync({ secret: profile.totp_secret, token, algorithm: "sha1", digits: 6, period: 30 });

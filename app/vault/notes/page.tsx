@@ -31,6 +31,7 @@ import { encrypt, decrypt } from "@/encryption";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import { ShareDialog } from "@/components/vault/share-dialog";
+import { ItemActionsMenu } from "@/components/vault/item-actions-menu";
 import type { DecryptedNote } from "@/types";
 
 export default function NotesPage() {
@@ -202,6 +203,7 @@ export default function NotesPage() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1">
                       {item.is_pinned && <Pin className="h-3 w-3 shrink-0 text-muted-foreground" />}
+                      {item.is_favorite && <Star className="h-3 w-3 shrink-0 fill-yellow-500 text-yellow-500" />}
                       <p className="truncate text-sm font-medium">{item.title}</p>
                     </div>
                     {item.preview && (
@@ -213,56 +215,18 @@ export default function NotesPage() {
                       {new Date(item.updated_at).toLocaleDateString()}
                     </p>
                   </div>
-                  <div className="flex shrink-0 gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        togglePin(item.id, item.is_pinned);
-                      }}
-                    >
-                      <Pin className={`h-3 w-3 ${item.is_pinned ? "fill-current" : ""}`} />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleFavorite(item.id, item.is_favorite);
-                      }}
-                    >
-                      <Star
-                        className={`h-3 w-3 ${
-                          item.is_favorite ? "fill-yellow-500 text-yellow-500" : ""
-                        }`}
-                      />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6"
-                      title="Hide"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleHidden(item.id);
-                      }}
-                    >
-                      <EyeOff className="h-3 w-3" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6 text-destructive"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete(item.id);
-                      }}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
+                  <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
+                    <ItemActionsMenu
+                      itemId={item.id}
+                      isPinned={item.is_pinned}
+                      isFavorite={item.is_favorite}
+                      folderId={item.folder_id}
+                      itemTags={item.tags}
+                      onRefetch={refetch}
+                      onShare={() => setShareItemId(item.id)}
+                      onDelete={() => handleDelete(item.id)}
+                      compact
+                    />
                   </div>
                 </div>
                 {item.tags.length > 0 && (

@@ -35,6 +35,7 @@ import { useSearch } from "@/hooks/use-search";
 import { useVault } from "@/hooks/use-vault";
 import { createClient } from "@/supabase/client";
 import { encrypt, decrypt, encryptFile, decryptFile } from "@/encryption";
+import { ItemActionsMenu } from "@/components/vault/item-actions-menu";
 import type { DecryptedDocument } from "@/types";
 
 function formatFileSize(bytes: number): string {
@@ -315,23 +316,16 @@ export default function DocumentsPage() {
                           <Download className="h-3 w-3" />
                         )}
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="shrink-0 h-8 w-8"
-                        title="Hide"
-                        onClick={() => toggleHidden(item.id)}
-                      >
-                        <EyeOff className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="shrink-0 h-8 w-8 text-destructive"
-                        onClick={() => handleDelete(item.id)}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
+                      <ItemActionsMenu
+                        itemId={item.id}
+                        isPinned={item.is_pinned}
+                        isFavorite={item.is_favorite}
+                        folderId={item.folder_id}
+                        itemTags={item.tags}
+                        onRefetch={refetch}
+                        onDelete={() => handleDelete(item.id)}
+                        showShare={false}
+                      />
                     </div>
                   </CardContent>
                 </Card>

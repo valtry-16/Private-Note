@@ -45,6 +45,7 @@ import { encrypt, decrypt, generatePassword, calculatePasswordStrength } from "@
 import { checkPasswordBreach } from "@/utils/breach-check";
 import type { DecryptedPassword } from "@/types";
 import { ShareDialog } from "@/components/vault/share-dialog";
+import { ItemActionsMenu } from "@/components/vault/item-actions-menu";
 
 export default function PasswordsPage() {
   const searchParams = useSearchParams();
@@ -73,6 +74,7 @@ export default function PasswordsPage() {
   const [breachCount, setBreachCount] = useState<number | null>(null);
   const [checkingBreach, setCheckingBreach] = useState(false);
   const [shareItemId, setShareItemId] = useState<string | null>(null);
+  const [showFormPassword, setShowFormPassword] = useState(false);
 
   function generateUsername() {
     const adjectives = ["swift","dark","bright","cool","silent","wild","sharp","bold","rapid","calm","lucky","noble"];
@@ -307,30 +309,16 @@ export default function PasswordsPage() {
                         >
                           <Edit3 className="h-4 w-4" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          title="Share"
-                          onClick={() => setShareItemId(item.id)}
-                        >
-                          <Share2 className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          title="Hide"
-                          onClick={() => toggleHidden(item.id)}
-                        >
-                          <EyeOff className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-destructive"
-                          onClick={() => handleDelete(item.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <ItemActionsMenu
+                          itemId={item.id}
+                          isPinned={item.is_pinned}
+                          isFavorite={item.is_favorite}
+                          folderId={item.folder_id}
+                          itemTags={item.tags}
+                          onRefetch={refetch}
+                          onShare={() => setShareItemId(item.id)}
+                          onDelete={() => handleDelete(item.id)}
+                        />
                       </div>
                     </div>
                     {isVisible && pw && (
@@ -411,13 +399,24 @@ export default function PasswordsPage() {
             <div className="space-y-2">
               <Label>Password</Label>
               <div className="flex gap-2">
-                <Input
-                  type="text"
-                  className="font-mono"
-                  placeholder="Password"
-                  value={formData.password}
-                  onChange={(e) => setFormData((f) => ({ ...f, password: e.target.value }))}
-                />
+                <div className="relative flex-1">
+                  <Input
+                    type={showFormPassword ? "text" : "password"}
+                    className="font-mono pr-10"
+                    placeholder="Password"
+                    value={formData.password}
+                    onChange={(e) => setFormData((f) => ({ ...f, password: e.target.value }))}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                    onClick={() => setShowFormPassword(!showFormPassword)}
+                  >
+                    {showFormPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
                 <Button
                   type="button"
                   variant="outline"

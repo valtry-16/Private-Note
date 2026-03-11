@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Lock, Loader2, ShieldCheck, Fingerprint } from "lucide-react";
+import { Lock, Loader2, ShieldCheck, Fingerprint, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +13,7 @@ export function VaultLockScreen() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   // 2FA state
   const [needs2FA, setNeeds2FA] = useState(false);
@@ -96,21 +97,17 @@ export function VaultLockScreen() {
         const res = await fetch("/api/totp/verify", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId: user?.id, token: "check" }),
+          body: JSON.stringify({ userId: user?.id, action: "check" }),
         });
         const data = await res.json();
-        // If we get "2FA not enabled", proceed normally (already unlocked)
-        if (data.error === "2FA not enabled") {
-          // Already unlocked by unlockVault, nothing more needed
+        if (!data.enabled) {
+          // 2FA not enabled, proceed normally (already unlocked)
           return;
         }
-        // 2FA is enabled — we need to re-lock and wait for TOTP
-        // Store password and show 2FA form
+        // 2FA is enabled — show TOTP form
         setPendingPassword(masterPassword);
         setNeeds2FA(true);
         setMasterPassword("");
-        // Re-lock vault until 2FA is verified (by calling lockVault would clear state)
-        // Instead, we leave it unlocked and show a 2FA gate
       } catch {
         // If check fails, proceed normally
       }
@@ -212,15 +209,28 @@ export function VaultLockScreen() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleUnlock} className="space-y-4">
-            <Input
-              type="password"
-              placeholder="Master password"
-              value={masterPassword}
-              onChange={(e) => setMasterPassword(e.target.value)}
-              required
-              autoComplete="off"
-              disabled={isLocked}
-            />
+            <div className="relative">
+              <Input
+                type={showPassword ? "text" : "password"}
+                placeholder="Master password"
+                value={masterPassword}
+                onChange={(e) => setMasterPassword(e.target.value)}
+                required
+                autoComplete="off"
+                disabled={isLocked}
+                className="pr-10"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                onClick={() => setShowPassword(!showPassword)}
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </Button>
+            </div>
             {error && (
               <p className="text-sm text-destructive">{error}</p>
             )}

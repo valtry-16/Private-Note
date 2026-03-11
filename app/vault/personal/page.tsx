@@ -37,6 +37,7 @@ import { useVault } from "@/hooks/use-vault";
 import { useClipboard } from "@/hooks/use-clipboard";
 import { createClient } from "@/supabase/client";
 import { encrypt, decrypt } from "@/encryption";
+import { ItemActionsMenu } from "@/components/vault/item-actions-menu";
 import type { DecryptedPersonalInfo } from "@/types";
 
 const categories = [
@@ -283,22 +284,16 @@ export default function PersonalInfoPage() {
                         <Button variant="ghost" size="icon" onClick={() => handleEdit(item.id)}>
                           <Edit3 className="h-4 w-4" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          title="Hide"
-                          onClick={() => toggleHidden(item.id)}
-                        >
-                          <EyeOff className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-destructive"
-                          onClick={() => handleDelete(item.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <ItemActionsMenu
+                          itemId={item.id}
+                          isPinned={item.is_pinned}
+                          isFavorite={item.is_favorite}
+                          folderId={item.folder_id}
+                          itemTags={item.tags}
+                          onRefetch={refetch}
+                          onDelete={() => handleDelete(item.id)}
+                          showShare={false}
+                        />
                       </div>
                     </div>
                     {isVisible && details && (
