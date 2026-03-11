@@ -20,19 +20,46 @@ export default function ResetPasswordPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [sessionReady, setSessionReady] = useState(false);
+  const [linkError, setLinkError] = useState("");
 
   useEffect(() => {
-    // Supabase will set the session from the URL hash automatically
     const supabase = createClient();
-    supabase.auth.onAuthStateChange((event) => {
+
+    // Check for errors in the URL hash (e.g. expired link)
+    const hash = window.location.hash;
+    if (hash) {
+      const params = new URLSearchParams(hash.substring(1));
+      const hashError = params.get("error_description");
+      if (hashError) {
+        setLinkError(hashError.replace(/\+/g, " "));
+        setSessionReady(true);
+        return;
+      }
+    }
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY") {
         setSessionReady(true);
       }
     });
+
     // Also check if already in a recovery session
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) setSessionReady(true);
     });
+
+    // Timeout fallback — don't spin forever
+    const timeout = setTimeout(() => {
+      setSessionReady((prev) => {
+        if (!prev) setLinkError("The reset link may have expired or is invalid.");
+        return true;
+      });
+    }, 10000);
+
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timeout);
+    };
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -101,6 +128,30 @@ export default function ResetPasswordPage() {
                 Request a new one
               </Link>
             </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (linkError) {
+    return (
+      <div className="flex min-h-screen items-center justify-center px-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
+              <Lock className="h-6 w-6 text-destructive" />
+            </div>
+            <CardTitle className="text-2xl">Link Expired</CardTitle>
+            <CardDescription>{linkError}</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3 text-center">
+            <Link href="/forgot-password">
+              <Button className="w-full">Request a New Reset Link</Button>
+            </Link>
+            <Link href="/login">
+              <Button variant="outline" className="w-full">Back to Login</Button>
+            </Link>
           </CardContent>
         </Card>
       </div>

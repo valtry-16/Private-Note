@@ -320,6 +320,11 @@ export default function SignupPage() {
               Log in
             </Link>
           </p>
+          <p className="mt-2 text-center text-sm text-muted-foreground">
+            <Link href="/" className="text-primary hover:underline">
+              &larr; Back to Home
+            </Link>
+          </p>
         </CardContent>
       </Card>
     </div>

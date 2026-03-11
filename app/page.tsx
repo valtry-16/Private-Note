@@ -22,18 +22,18 @@ export default function LandingPage() {
             <ZeroVaultLogo className="h-8 w-8" />
             <span className="text-xl font-bold">ZeroVault</span>
           </div>
-          <div className="flex items-center gap-3">
-            <Link href="/faq">
-              <Button variant="ghost">FAQ</Button>
+          <div className="flex items-center gap-1 sm:gap-3">
+            <Link href="/faq" className="hidden sm:block">
+              <Button variant="ghost" size="sm">FAQ</Button>
             </Link>
-            <Link href="/privacy">
-              <Button variant="ghost">Privacy</Button>
+            <Link href="/privacy" className="hidden sm:block">
+              <Button variant="ghost" size="sm">Privacy</Button>
             </Link>
             <Link href="/login">
-              <Button variant="ghost">Log In</Button>
+              <Button variant="ghost" size="sm">Log In</Button>
             </Link>
             <Link href="/signup">
-              <Button>Get Started</Button>
+              <Button size="sm">Get Started</Button>
             </Link>
           </div>
         </div>
