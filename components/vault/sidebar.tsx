@@ -23,6 +23,12 @@ import {
   Menu,
   X,
   EyeOff,
+  Trash2,
+  Tag,
+  Activity,
+  RefreshCw,
+  Cloud,
+  CloudOff,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
@@ -38,7 +44,11 @@ const navItems = [
   { href: "/vault/documents", icon: Upload, label: "Documents" },
   { href: "/vault/personal", icon: User, label: "Personal Info" },
   { href: "/vault/favorites", icon: Star, label: "Favorites" },
+  { href: "/vault/folders", icon: FolderClosed, label: "Folders" },
+  { href: "/vault/tags", icon: Tag, label: "Tags" },
+  { href: "/vault/health", icon: Activity, label: "Password Health" },
   { href: "/vault/hidden", icon: EyeOff, label: "Hidden Vault" },
+  { href: "/vault/trash", icon: Trash2, label: "Trash" },
   { href: "/vault/settings", icon: Settings, label: "Settings" },
 ];
 
@@ -48,11 +58,43 @@ export function Sidebar() {
   const { theme, setTheme } = useTheme();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isOnline, setIsOnline] = useState(true);
+  const [lastSync, setLastSync] = useState<Date | null>(null);
 
   // Close mobile sidebar on route change
   useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);
+
+  // Track online status and sync time
+  useEffect(() => {
+    setIsOnline(navigator.onLine);
+    setLastSync(new Date());
+
+    const handleOnline = () => { setIsOnline(true); setLastSync(new Date()); };
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    // Update sync time periodically when online
+    const interval = setInterval(() => {
+      if (navigator.onLine) setLastSync(new Date());
+    }, 60000);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+      clearInterval(interval);
+    };
+  }, []);
+
+  function formatSyncTime(date: Date | null) {
+    if (!date) return "Never";
+    const diff = Math.floor((Date.now() - date.getTime()) / 1000);
+    if (diff < 60) return "Just now";
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  }
 
   const sidebarContent = (
     <>
@@ -124,6 +166,24 @@ export function Sidebar() {
 
       {/* Bottom Actions */}
       <div className="space-y-1 border-t p-2">
+        {/* Sync indicator */}
+        <div
+          className={cn(
+            "flex items-center gap-2 rounded-md px-3 py-1.5 text-xs text-muted-foreground",
+            collapsed && !mobileOpen && "justify-center px-0"
+          )}
+        >
+          {isOnline ? (
+            <Cloud className="h-4 w-4 shrink-0 text-green-500" />
+          ) : (
+            <CloudOff className="h-4 w-4 shrink-0 text-yellow-500" />
+          )}
+          {(!collapsed || mobileOpen) && (
+            <span>
+              {isOnline ? `Synced ${formatSyncTime(lastSync)}` : "Offline"}
+            </span>
+          )}
+        </div>
         <Button
           variant="ghost"
           className={cn(

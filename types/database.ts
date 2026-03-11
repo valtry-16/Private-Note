@@ -14,6 +14,8 @@ export interface Database {
           is_pinned: boolean;
           is_favorite: boolean;
           is_hidden: boolean;
+          is_deleted: boolean;
+          deleted_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -27,6 +29,8 @@ export interface Database {
           is_pinned?: boolean;
           is_favorite?: boolean;
           is_hidden?: boolean;
+          is_deleted?: boolean;
+          deleted_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -40,7 +44,37 @@ export interface Database {
           is_pinned?: boolean;
           is_favorite?: boolean;
           is_hidden?: boolean;
+          is_deleted?: boolean;
+          deleted_at?: string | null;
           updated_at?: string;
+        };
+        Relationships: [];
+      };
+      shared_links: {
+        Row: {
+          id: string;
+          user_id: string;
+          item_id: string;
+          encrypted_data: string;
+          share_key: string;
+          expires_at: string;
+          max_views: number;
+          view_count: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          item_id: string;
+          encrypted_data: string;
+          share_key: string;
+          expires_at: string;
+          max_views?: number;
+          view_count?: number;
+          created_at?: string;
+        };
+        Update: {
+          view_count?: number;
         };
         Relationships: [];
       };
@@ -107,6 +141,10 @@ export interface Database {
           dead_man_switch_enabled: boolean;
           dead_man_inactivity_days: number;
           last_active_at: string;
+          totp_secret: string | null;
+          totp_enabled: boolean;
+          webauthn_credential_id: string | null;
+          webauthn_public_key: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -120,6 +158,10 @@ export interface Database {
           dead_man_switch_enabled?: boolean;
           dead_man_inactivity_days?: number;
           last_active_at?: string;
+          totp_secret?: string | null;
+          totp_enabled?: boolean;
+          webauthn_credential_id?: string | null;
+          webauthn_public_key?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -131,6 +173,10 @@ export interface Database {
           dead_man_switch_enabled?: boolean;
           dead_man_inactivity_days?: number;
           last_active_at?: string;
+          totp_secret?: string | null;
+          totp_enabled?: boolean;
+          webauthn_credential_id?: string | null;
+          webauthn_public_key?: string | null;
           updated_at?: string;
         };
         Relationships: [];
@@ -214,6 +260,8 @@ export interface VaultItemListEntry {
   is_pinned: boolean;
   is_favorite: boolean;
   is_hidden: boolean;
+  is_deleted: boolean;
+  deleted_at: string | null;
   created_at: string;
   updated_at: string;
   tags: string[];

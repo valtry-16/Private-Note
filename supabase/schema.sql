@@ -15,6 +15,10 @@ CREATE TABLE IF NOT EXISTS user_profiles (
   dead_man_switch_enabled BOOLEAN DEFAULT FALSE,
   dead_man_inactivity_days INTEGER DEFAULT 90,
   last_active_at TIMESTAMPTZ DEFAULT NOW(),
+  totp_secret TEXT,
+  totp_enabled BOOLEAN DEFAULT FALSE,
+  webauthn_credential_id TEXT,
+  webauthn_public_key TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(user_id)
@@ -48,8 +52,23 @@ CREATE TABLE IF NOT EXISTS vault_items (
   is_pinned BOOLEAN DEFAULT FALSE,
   is_favorite BOOLEAN DEFAULT FALSE,
   is_hidden BOOLEAN DEFAULT FALSE,
+  is_deleted BOOLEAN DEFAULT FALSE,
+  deleted_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Shared links for secure sharing
+CREATE TABLE IF NOT EXISTS shared_links (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  item_id UUID NOT NULL REFERENCES vault_items(id) ON DELETE CASCADE,
+  encrypted_data TEXT NOT NULL,
+  share_key TEXT NOT NULL,
+  expires_at TIMESTAMPTZ NOT NULL,
+  max_views INTEGER DEFAULT 1,
+  view_count INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- Item-Tag junction table
@@ -79,6 +98,9 @@ CREATE INDEX IF NOT EXISTS idx_tags_user_id ON tags(user_id);
 CREATE INDEX IF NOT EXISTS idx_security_logs_user_id ON security_logs(user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_item_tags_item ON item_tags(item_id);
 CREATE INDEX IF NOT EXISTS idx_item_tags_tag ON item_tags(tag_id);
+CREATE INDEX IF NOT EXISTS idx_vault_items_deleted ON vault_items(user_id, is_deleted);
+CREATE INDEX IF NOT EXISTS idx_shared_links_user ON shared_links(user_id);
+CREATE INDEX IF NOT EXISTS idx_shared_links_share_key ON shared_links(share_key);
 
 -- Row Level Security (RLS) Policies
 -- Users can only access their own data
@@ -89,6 +111,7 @@ ALTER TABLE folders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tags ENABLE ROW LEVEL SECURITY;
 ALTER TABLE item_tags ENABLE ROW LEVEL SECURITY;
 ALTER TABLE security_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE shared_links ENABLE ROW LEVEL SECURITY;
 
 -- User profiles policies
 CREATE POLICY "Users can view own profile"
@@ -187,6 +210,19 @@ CREATE POLICY "Users can view own security logs"
 CREATE POLICY "Users can insert own security logs"
   ON security_logs FOR INSERT
   WITH CHECK (auth.uid() = user_id);
+
+-- Shared links policies
+CREATE POLICY "Users can view own shared links"
+  ON shared_links FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own shared links"
+  ON shared_links FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own shared links"
+  ON shared_links FOR DELETE
+  USING (auth.uid() = user_id);
 
 -- Storage bucket for encrypted documents
 INSERT INTO storage.buckets (id, name, public) VALUES ('vault-documents', 'vault-documents', false)

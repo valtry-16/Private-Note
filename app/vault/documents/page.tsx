@@ -14,6 +14,8 @@ import {
   Loader2,
   HardDrive,
   EyeOff,
+  Eye,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -62,6 +64,10 @@ export default function DocumentsPage() {
   const [notes, setNotes] = useState("");
   const [uploading, setUploading] = useState(false);
   const [downloading, setDownloading] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewType, setPreviewType] = useState<string>("");
+  const [previewName, setPreviewName] = useState<string>("");
+  const [previewing, setPreviewing] = useState<string | null>(null);
 
   async function handleUpload() {
     if (!selectedFile || !user || !masterPassword) return;
@@ -153,21 +159,55 @@ export default function DocumentsPage() {
     setDownloading(null);
   }
 
-  async function handleDelete(itemId: string) {
-    const { data: item } = await supabase
-      .from("vault_items")
-      .select("metadata")
-      .eq("id", itemId)
-      .single();
+  async function handlePreview(itemId: string) {
+    if (!masterPassword) return;
+    setPreviewing(itemId);
 
-    if (item) {
+    try {
+      const { data: item } = await supabase
+        .from("vault_items")
+        .select("encrypted_data, metadata")
+        .eq("id", itemId)
+        .single();
+
+      if (!item) return;
+
       const metadata = item.metadata as any;
-      if (metadata.file_path) {
-        await supabase.storage.from("vault-documents").remove([metadata.file_path]);
-      }
+      const { data: fileData } = await supabase.storage
+        .from("vault-documents")
+        .download(metadata.file_path);
+
+      if (!fileData) return;
+
+      const docInfo = JSON.parse(
+        await decrypt(item.encrypted_data, masterPassword)
+      ) as DecryptedDocument;
+
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      const blob = new Blob([fileData], { type: docInfo.fileType });
+      const url = URL.createObjectURL(blob);
+      setPreviewUrl(url);
+      setPreviewType(docInfo.fileType);
+      setPreviewName(docInfo.fileName);
+    } catch (err) {
+      console.error("Preview failed:", err);
     }
 
-    await supabase.from("vault_items").delete().eq("id", itemId);
+    setPreviewing(null);
+  }
+
+  function closePreview() {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl(null);
+    setPreviewType("");
+    setPreviewName("");
+  }
+
+  async function handleDelete(itemId: string) {
+    await supabase
+      .from("vault_items")
+      .update({ is_deleted: true, deleted_at: new Date().toISOString() })
+      .eq("id", itemId);
     refetch();
   }
 
@@ -227,7 +267,7 @@ export default function DocumentsPage() {
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {filteredItems
-            .filter((i) => !i.is_hidden)
+            .filter((i) => !i.is_hidden && !i.is_deleted)
             .map((item) => {
               const metadata = item as any;
               const FileIcon = File;
@@ -251,15 +291,29 @@ export default function DocumentsPage() {
                         variant="outline"
                         size="sm"
                         className="flex-1 min-w-0"
-                        onClick={() => handleDownload(item.id)}
-                        disabled={downloading === item.id}
+                        onClick={() => handlePreview(item.id)}
+                        disabled={previewing === item.id}
                       >
-                        {downloading === item.id ? (
+                        {previewing === item.id ? (
                           <Loader2 className="mr-1 h-3 w-3 animate-spin" />
                         ) : (
-                          <Download className="mr-1 h-3 w-3" />
+                          <Eye className="mr-1 h-3 w-3" />
                         )}
-                        <span className="truncate">Download</span>
+                        <span className="truncate">Preview</span>
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="shrink-0 h-8 w-8"
+                        onClick={() => handleDownload(item.id)}
+                        disabled={downloading === item.id}
+                        title="Download"
+                      >
+                        {downloading === item.id ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <Download className="h-3 w-3" />
+                        )}
                       </Button>
                       <Button
                         variant="outline"
@@ -344,6 +398,48 @@ export default function DocumentsPage() {
               Encrypt & Upload
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Preview Dialog */}
+      <Dialog open={!!previewUrl} onOpenChange={(open) => !open && closePreview()}>
+        <DialogContent className="max-w-4xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle className="truncate">{previewName}</DialogTitle>
+          </DialogHeader>
+          <div className="flex items-center justify-center overflow-auto" style={{ maxHeight: "70vh" }}>
+            {previewType.startsWith("image/") && previewUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={previewUrl}
+                alt={previewName}
+                className="max-h-full max-w-full rounded object-contain"
+              />
+            )}
+            {previewType === "application/pdf" && previewUrl && (
+              <iframe
+                src={previewUrl}
+                title={previewName}
+                className="h-[70vh] w-full rounded border-0"
+              />
+            )}
+            {previewType.startsWith("text/") && previewUrl && (
+              <iframe
+                src={previewUrl}
+                title={previewName}
+                className="h-[70vh] w-full rounded border bg-white p-4"
+              />
+            )}
+            {!previewType.startsWith("image/") &&
+              previewType !== "application/pdf" &&
+              !previewType.startsWith("text/") && (
+                <div className="py-12 text-center text-muted-foreground">
+                  <File className="mx-auto mb-3 h-12 w-12 opacity-50" />
+                  <p>Preview not available for this file type</p>
+                  <p className="text-xs mt-1">{previewType}</p>
+                </div>
+              )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>

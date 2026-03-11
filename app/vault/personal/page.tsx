@@ -160,7 +160,10 @@ export default function PersonalInfoPage() {
   }
 
   async function handleDelete(id: string) {
-    await supabase.from("vault_items").delete().eq("id", id);
+    await supabase
+      .from("vault_items")
+      .update({ is_deleted: true, deleted_at: new Date().toISOString() })
+      .eq("id", id);
     setVisibleItems((prev) => {
       const next = { ...prev };
       delete next[id];
@@ -248,7 +251,7 @@ export default function PersonalInfoPage() {
       ) : (
         <div className="space-y-3">
           {filteredItems
-            .filter((i) => !i.is_hidden)
+            .filter((i) => !i.is_hidden && !i.is_deleted)
             .map((item) => {
               const isVisible = showFields[item.id];
               const details = visibleItems[item.id];

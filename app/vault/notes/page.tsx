@@ -15,6 +15,7 @@ import {
   MoreVertical,
   ChevronLeft,
   EyeOff,
+  Share2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +30,7 @@ import { createClient } from "@/supabase/client";
 import { encrypt, decrypt } from "@/encryption";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
+import { ShareDialog } from "@/components/vault/share-dialog";
 import type { DecryptedNote } from "@/types";
 
 export default function NotesPage() {
@@ -43,9 +45,10 @@ export default function NotesPage() {
   const [noteData, setNoteData] = useState<DecryptedNote | null>(null);
   const [isEditing, setIsEditing] = useState(isNew);
   const [saving, setSaving] = useState(false);
+  const [shareItemId, setShareItemId] = useState<string | null>(null);
   const supabase = createClient();
 
-  const visibleItems = filteredItems.filter((i) => !i.is_hidden);
+  const visibleItems = filteredItems.filter((i) => !i.is_hidden && !i.is_deleted);
 
   useEffect(() => {
     if (selectedId) setActiveNoteId(selectedId);
@@ -118,7 +121,10 @@ export default function NotesPage() {
   }
 
   async function handleDelete(id: string) {
-    await supabase.from("vault_items").delete().eq("id", id);
+    await supabase
+      .from("vault_items")
+      .update({ is_deleted: true, deleted_at: new Date().toISOString() })
+      .eq("id", id);
     if (activeNoteId === id) {
       setActiveNoteId(null);
       setNoteData(null);
@@ -318,9 +324,16 @@ export default function NotesPage() {
           <div className="p-4 sm:p-6">
             <div className="mb-4 flex items-center justify-between gap-2">
               <h1 className="min-w-0 truncate text-xl font-bold sm:text-2xl">{noteData.title}</h1>
-              <Button onClick={() => setIsEditing(true)} variant="outline" size="sm" className="shrink-0">
-                <Edit3 className="mr-1 h-4 w-4" /> Edit
-              </Button>
+              <div className="flex gap-2 shrink-0">
+                {activeNoteId && (
+                  <Button onClick={() => setShareItemId(activeNoteId)} variant="outline" size="sm">
+                    <Share2 className="mr-1 h-4 w-4" /> Share
+                  </Button>
+                )}
+                <Button onClick={() => setIsEditing(true)} variant="outline" size="sm">
+                  <Edit3 className="mr-1 h-4 w-4" /> Edit
+                </Button>
+              </div>
             </div>
             <div className="prose prose-sm dark:prose-invert max-w-none">
               <ReactMarkdown>{noteData.content}</ReactMarkdown>
@@ -335,6 +348,15 @@ export default function NotesPage() {
           </div>
         )}
       </div>
+
+      {shareItemId && (
+        <ShareDialog
+          itemId={shareItemId}
+          itemType="note"
+          open={!!shareItemId}
+          onOpenChange={(open) => !open && setShareItemId(null)}
+        />
+      )}
     </div>
   );
 }

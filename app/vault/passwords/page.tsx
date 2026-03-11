@@ -17,6 +17,8 @@ import {
   RefreshCw,
   Shield,
   Loader2,
+  Share2,
+  Wand2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,6 +44,7 @@ import { createClient } from "@/supabase/client";
 import { encrypt, decrypt, generatePassword, calculatePasswordStrength } from "@/encryption";
 import { checkPasswordBreach } from "@/utils/breach-check";
 import type { DecryptedPassword } from "@/types";
+import { ShareDialog } from "@/components/vault/share-dialog";
 
 export default function PasswordsPage() {
   const searchParams = useSearchParams();
@@ -69,6 +72,16 @@ export default function PasswordsPage() {
   const [saving, setSaving] = useState(false);
   const [breachCount, setBreachCount] = useState<number | null>(null);
   const [checkingBreach, setCheckingBreach] = useState(false);
+  const [shareItemId, setShareItemId] = useState<string | null>(null);
+
+  function generateUsername() {
+    const adjectives = ["swift","dark","bright","cool","silent","wild","sharp","bold","rapid","calm","lucky","noble"];
+    const nouns = ["fox","wolf","hawk","bear","tiger","eagle","falcon","lynx","raven","cobra","phoenix","dragon"];
+    const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
+    const noun = nouns[Math.floor(Math.random() * nouns.length)];
+    const num = Math.floor(Math.random() * 9000) + 1000;
+    return `${adj}_${noun}${num}`;
+  }
 
   // Password generator settings
   const [genLength, setGenLength] = useState(20);
@@ -153,7 +166,10 @@ export default function PasswordsPage() {
   }
 
   async function handleDelete(id: string) {
-    await supabase.from("vault_items").delete().eq("id", id);
+    await supabase
+      .from("vault_items")
+      .update({ is_deleted: true, deleted_at: new Date().toISOString() })
+      .eq("id", id);
     setDecryptedPasswords((prev) => {
       const next = { ...prev };
       delete next[id];
@@ -250,7 +266,7 @@ export default function PasswordsPage() {
       ) : (
         <div className="space-y-3">
           {filteredItems
-            .filter((i) => !i.is_hidden)
+            .filter((i) => !i.is_hidden && !i.is_deleted)
             .map((item) => {
               const pw = decryptedPasswords[item.id];
               const isVisible = showPasswords[item.id];
@@ -290,6 +306,14 @@ export default function PasswordsPage() {
                           onClick={() => handleEdit(item.id)}
                         >
                           <Edit3 className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="Share"
+                          onClick={() => setShareItemId(item.id)}
+                        >
+                          <Share2 className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="ghost"
@@ -367,11 +391,22 @@ export default function PasswordsPage() {
             </div>
             <div className="space-y-2">
               <Label>Username / Email</Label>
-              <Input
-                placeholder="user@example.com"
-                value={formData.username}
-                onChange={(e) => setFormData((f) => ({ ...f, username: e.target.value }))}
-              />
+              <div className="flex gap-2">
+                <Input
+                  placeholder="user@example.com"
+                  value={formData.username}
+                  onChange={(e) => setFormData((f) => ({ ...f, username: e.target.value }))}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  title="Generate random username"
+                  onClick={() => setFormData((f) => ({ ...f, username: generateUsername() }))}
+                >
+                  <Wand2 className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
             <div className="space-y-2">
               <Label>Password</Label>
@@ -518,6 +553,15 @@ export default function PasswordsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {shareItemId && (
+        <ShareDialog
+          itemId={shareItemId}
+          itemType="password"
+          open={!!shareItemId}
+          onOpenChange={(open) => !open && setShareItemId(null)}
+        />
+      )}
     </div>
   );
 }

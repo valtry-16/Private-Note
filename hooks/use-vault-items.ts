@@ -22,7 +22,7 @@ export function useVaultItems(type?: VaultItemType) {
     setLoading(true);
     let query = supabase
       .from("vault_items")
-      .select("id, type, metadata, folder_id, is_pinned, is_favorite, is_hidden, created_at, updated_at")
+      .select("id, type, metadata, folder_id, is_pinned, is_favorite, is_hidden, is_deleted, deleted_at, created_at, updated_at")
       .eq("user_id", user.id)
       .order("is_pinned", { ascending: false })
       .order("updated_at", { ascending: false });
@@ -69,6 +69,8 @@ export function useVaultItems(type?: VaultItemType) {
           is_pinned: item.is_pinned,
           is_favorite: item.is_favorite,
           is_hidden: item.is_hidden,
+          is_deleted: item.is_deleted ?? false,
+          deleted_at: item.deleted_at ?? null,
           created_at: item.created_at,
           updated_at: item.updated_at,
           tags,
