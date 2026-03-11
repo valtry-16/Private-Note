@@ -39,10 +39,12 @@ export function ShareDialog({ itemId, itemType, open, onOpenChange }: ShareDialo
   const [shareUrl, setShareUrl] = useState("");
   const [creating, setCreating] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [error, setError] = useState("");
 
   async function handleCreateLink() {
     if (!user || !masterPassword || !passphrase) return;
     setCreating(true);
+    setError("");
 
     try {
       // Fetch and decrypt the item
@@ -52,7 +54,11 @@ export function ShareDialog({ itemId, itemType, open, onOpenChange }: ShareDialo
         .eq("id", itemId)
         .single();
 
-      if (!item) return;
+      if (!item) {
+        setError("Item not found");
+        setCreating(false);
+        return;
+      }
 
       const decryptedData = await decrypt(item.encrypted_data, masterPassword);
       const sharePayload = JSON.stringify({
@@ -69,19 +75,31 @@ export function ShareDialog({ itemId, itemType, open, onOpenChange }: ShareDialo
         Date.now() + parseInt(expiryHours) * 60 * 60 * 1000
       ).toISOString();
 
-      await supabase.from("shared_links").insert({
-        user_id: user.id,
-        item_id: itemId,
-        encrypted_data: encryptedShareData,
-        share_key: shareKey,
-        expires_at: expiresAt,
-        max_views: parseInt(maxViews),
+      // Use server-side API to insert (bypasses RLS)
+      const res = await fetch("/api/share", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          item_id: itemId,
+          encrypted_data: encryptedShareData,
+          share_key: shareKey,
+          expires_at: expiresAt,
+          max_views: parseInt(maxViews),
+        }),
       });
+
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        setError(errBody.error || "Failed to create share link");
+        setCreating(false);
+        return;
+      }
 
       const url = `${window.location.origin}/share/${shareKey}`;
       setShareUrl(url);
     } catch (err) {
       console.error("Failed to create share link:", err);
+      setError("Failed to create share link");
     }
 
     setCreating(false);
@@ -97,6 +115,7 @@ export function ShareDialog({ itemId, itemType, open, onOpenChange }: ShareDialo
     setPassphrase("");
     setShareUrl("");
     setCopied(false);
+    setError("");
     onOpenChange(false);
   }
 
@@ -154,6 +173,9 @@ export function ShareDialog({ itemId, itemType, open, onOpenChange }: ShareDialo
                 </Select>
               </div>
             </div>
+            {error && (
+              <p className="text-sm text-destructive">{error}</p>
+            )}
             <DialogFooter>
               <Button variant="outline" onClick={handleClose}>Cancel</Button>
               <Button onClick={handleCreateLink} disabled={creating || !passphrase}>

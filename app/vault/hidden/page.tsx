@@ -15,6 +15,7 @@ import {
   Trash2,
   Settings,
   Loader2,
+  Undo2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -62,6 +63,7 @@ export default function HiddenVaultPage() {
   const [passcode, setPasscode] = useState("");
   const [unlocking, setUnlocking] = useState(false);
   const [error, setError] = useState("");
+  const [showPasscode, setShowPasscode] = useState(false);
 
   const hiddenItems = items.filter((i) => i.is_hidden);
 
@@ -132,15 +134,28 @@ export default function HiddenVaultPage() {
             >
               <div className="space-y-2">
                 <Label htmlFor="passcode">Passcode</Label>
-                <Input
-                  id="passcode"
-                  type="password"
-                  placeholder="Enter passcode"
-                  value={passcode}
-                  onChange={(e) => setPasscode(e.target.value)}
-                  autoFocus
-                  autoComplete="off"
-                />
+                <div className="relative">
+                  <Input
+                    id="passcode"
+                    type={showPasscode ? "text" : "password"}
+                    placeholder="Enter passcode"
+                    value={passcode}
+                    onChange={(e) => setPasscode(e.target.value)}
+                    autoFocus
+                    autoComplete="off"
+                    className="pr-10"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                    onClick={() => setShowPasscode(!showPasscode)}
+                    tabIndex={-1}
+                  >
+                    {showPasscode ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+                  </Button>
+                </div>
               </div>
               {error && <p className="text-sm text-destructive">{error}</p>}
               <Button type="submit" className="w-full" disabled={!passcode || unlocking}>
@@ -214,10 +229,10 @@ export default function HiddenVaultPage() {
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8"
-                      title="Unhide — move back to main vault"
+                      title="Move back to main vault"
                       onClick={() => unhideItem(item.id)}
                     >
-                      <Eye className="h-4 w-4" />
+                      <Undo2 className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="ghost"

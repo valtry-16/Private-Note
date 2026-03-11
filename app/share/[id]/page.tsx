@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Shield, Lock, Eye, AlertTriangle, Loader2 } from "lucide-react";
+import { Shield, Lock, Eye, EyeOff, AlertTriangle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +14,7 @@ export default function ShareViewPage({ params }: { params: { id: string } }) {
   const [encryptedData, setEncryptedData] = useState<string | null>(null);
   const [linkError, setLinkError] = useState("");
   const [fetching, setFetching] = useState(true);
+  const [showPassphrase, setShowPassphrase] = useState(false);
 
   useEffect(() => {
     fetchLink();
@@ -121,14 +122,27 @@ export default function ShareViewPage({ params }: { params: { id: string } }) {
             <div className="space-y-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Enter passphrase to decrypt</label>
-                <Input
-                  type="password"
-                  placeholder="Passphrase"
-                  value={passphrase}
-                  onChange={(e) => setPassphrase(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleDecrypt()}
-                  autoComplete="off"
-                />
+                <div className="relative">
+                  <Input
+                    type={showPassphrase ? "text" : "password"}
+                    placeholder="Passphrase"
+                    value={passphrase}
+                    onChange={(e) => setPassphrase(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleDecrypt()}
+                    autoComplete="off"
+                    className="pr-10"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                    onClick={() => setShowPassphrase(!showPassphrase)}
+                    tabIndex={-1}
+                  >
+                    {showPassphrase ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+                  </Button>
+                </div>
               </div>
               {error && (
                 <p className="text-sm text-destructive">{error}</p>

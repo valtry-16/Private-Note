@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Shield, AlertTriangle, Loader2 } from "lucide-react";
+import { Shield, AlertTriangle, Loader2, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,6 +20,10 @@ export default function SignupPage() {
   const [confirmMaster, setConfirmMaster] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showMaster, setShowMaster] = useState(false);
+  const [showConfirmMaster, setShowConfirmMaster] = useState(false);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -117,27 +121,53 @@ export default function SignupPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Account Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Min 8 characters"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                autoComplete="new-password"
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Min 8 characters"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  autoComplete="new-password"
+                  className="pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                  onClick={() => setShowPassword(!showPassword)}
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+                </Button>
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirmPassword">Confirm Account Password</Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                placeholder="Re-enter account password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-                autoComplete="new-password"
-              />
+              <div className="relative">
+                <Input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  placeholder="Re-enter account password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  autoComplete="new-password"
+                  className="pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  tabIndex={-1}
+                >
+                  {showConfirmPassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+                </Button>
+              </div>
             </div>
 
             <div className="my-4 rounded-md border border-yellow-500/50 bg-yellow-500/10 p-3">
@@ -154,27 +184,53 @@ export default function SignupPage() {
 
             <div className="space-y-2">
               <Label htmlFor="masterPassword">Master Password</Label>
-              <Input
-                id="masterPassword"
-                type="password"
-                placeholder="Min 12 characters — used for encryption"
-                value={masterPassword}
-                onChange={(e) => setMasterPassword(e.target.value)}
-                required
-                autoComplete="off"
-              />
+              <div className="relative">
+                <Input
+                  id="masterPassword"
+                  type={showMaster ? "text" : "password"}
+                  placeholder="Min 12 characters — used for encryption"
+                  value={masterPassword}
+                  onChange={(e) => setMasterPassword(e.target.value)}
+                  required
+                  autoComplete="off"
+                  className="pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                  onClick={() => setShowMaster(!showMaster)}
+                  tabIndex={-1}
+                >
+                  {showMaster ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+                </Button>
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirmMaster">Confirm Master Password</Label>
-              <Input
-                id="confirmMaster"
-                type="password"
-                placeholder="Re-enter master password"
-                value={confirmMaster}
-                onChange={(e) => setConfirmMaster(e.target.value)}
-                required
-                autoComplete="off"
-              />
+              <div className="relative">
+                <Input
+                  id="confirmMaster"
+                  type={showConfirmMaster ? "text" : "password"}
+                  placeholder="Re-enter master password"
+                  value={confirmMaster}
+                  onChange={(e) => setConfirmMaster(e.target.value)}
+                  required
+                  autoComplete="off"
+                  className="pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                  onClick={() => setShowConfirmMaster(!showConfirmMaster)}
+                  tabIndex={-1}
+                >
+                  {showConfirmMaster ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+                </Button>
+              </div>
             </div>
 
             {error && (

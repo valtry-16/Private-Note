@@ -107,6 +107,7 @@ export default function DocumentsPage() {
           encrypted_title: encryptedTitle,
           file_path: filePath,
           file_size: selectedFile.size,
+          encrypted_file_metadata: encryptedMetadataStr,
         },
       });
 
@@ -145,7 +146,21 @@ export default function DocumentsPage() {
         await decrypt(item.encrypted_data, masterPassword)
       ) as DecryptedDocument;
 
-      const url = URL.createObjectURL(fileData);
+      // Decrypt the file if encrypted metadata is available
+      let downloadBlob: Blob;
+      if (metadata.encrypted_file_metadata) {
+        const decryptedFile = await decryptFile(
+          fileData,
+          metadata.encrypted_file_metadata,
+          masterPassword
+        );
+        downloadBlob = new Blob([await decryptedFile.arrayBuffer()], { type: decryptedFile.type });
+      } else {
+        // Legacy files without encrypted metadata — serve raw blob
+        downloadBlob = fileData;
+      }
+
+      const url = URL.createObjectURL(downloadBlob);
       const a = document.createElement("a");
       a.href = url;
       a.download = docInfo.fileName;
@@ -185,8 +200,22 @@ export default function DocumentsPage() {
       ) as DecryptedDocument;
 
       if (previewUrl) URL.revokeObjectURL(previewUrl);
-      const blob = new Blob([fileData], { type: docInfo.fileType });
-      const url = URL.createObjectURL(blob);
+
+      // Decrypt the file if encrypted metadata is available
+      let previewBlob: Blob;
+      if (metadata.encrypted_file_metadata) {
+        const decryptedFile = await decryptFile(
+          fileData,
+          metadata.encrypted_file_metadata,
+          masterPassword
+        );
+        previewBlob = new Blob([await decryptedFile.arrayBuffer()], { type: decryptedFile.type });
+      } else {
+        // Legacy files without encrypted metadata — try raw blob
+        previewBlob = new Blob([fileData], { type: docInfo.fileType });
+      }
+
+      const url = URL.createObjectURL(previewBlob);
       setPreviewUrl(url);
       setPreviewType(docInfo.fileType);
       setPreviewName(docInfo.fileName);

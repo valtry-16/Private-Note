@@ -12,6 +12,7 @@ import {
   AlertTriangle,
   Loader2,
   Eye,
+  EyeOff,
   Download,
   Trash2,
   Palette,
@@ -75,12 +76,17 @@ export default function SettingsPage() {
   const [confirmNewMasterPw, setConfirmNewMasterPw] = useState("");
   const [changingPw, setChangingPw] = useState(false);
   const [changePwError, setChangePwError] = useState("");
+  const [showCurrentPw, setShowCurrentPw] = useState(false);
+  const [showNewPw, setShowNewPw] = useState(false);
+  const [showConfirmNewPw, setShowConfirmNewPw] = useState(false);
 
   // Hidden vault
   const [hiddenVaultOpen, setHiddenVaultOpen] = useState(false);
   const [hiddenPasscode, setHiddenPasscode] = useState("");
   const [confirmHiddenPasscode, setConfirmHiddenPasscode] = useState("");
   const [settingUpHidden, setSettingUpHidden] = useState(false);
+  const [showHiddenPasscode, setShowHiddenPasscode] = useState(false);
+  const [showConfirmHiddenPasscode, setShowConfirmHiddenPasscode] = useState(false);
 
   // Export
   const [exporting, setExporting] = useState(false);
@@ -974,31 +980,70 @@ export default function SettingsPage() {
             </div>
             <div className="space-y-2">
               <Label>Current Master Password</Label>
-              <Input
-                type="password"
-                value={currentMasterPw}
-                onChange={(e) => setCurrentMasterPw(e.target.value)}
-                autoComplete="off"
-              />
+              <div className="relative">
+                <Input
+                  type={showCurrentPw ? "text" : "password"}
+                  value={currentMasterPw}
+                  onChange={(e) => setCurrentMasterPw(e.target.value)}
+                  autoComplete="off"
+                  className="pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                  onClick={() => setShowCurrentPw(!showCurrentPw)}
+                  tabIndex={-1}
+                >
+                  {showCurrentPw ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+                </Button>
+              </div>
             </div>
             <div className="space-y-2">
               <Label>New Master Password</Label>
-              <Input
-                type="password"
-                value={newMasterPw}
-                onChange={(e) => setNewMasterPw(e.target.value)}
-                placeholder="Min 12 characters"
-                autoComplete="off"
-              />
+              <div className="relative">
+                <Input
+                  type={showNewPw ? "text" : "password"}
+                  value={newMasterPw}
+                  onChange={(e) => setNewMasterPw(e.target.value)}
+                  placeholder="Min 12 characters"
+                  autoComplete="off"
+                  className="pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                  onClick={() => setShowNewPw(!showNewPw)}
+                  tabIndex={-1}
+                >
+                  {showNewPw ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+                </Button>
+              </div>
             </div>
             <div className="space-y-2">
               <Label>Confirm New Master Password</Label>
-              <Input
-                type="password"
-                value={confirmNewMasterPw}
-                onChange={(e) => setConfirmNewMasterPw(e.target.value)}
-                autoComplete="off"
-              />
+              <div className="relative">
+                <Input
+                  type={showConfirmNewPw ? "text" : "password"}
+                  value={confirmNewMasterPw}
+                  onChange={(e) => setConfirmNewMasterPw(e.target.value)}
+                  autoComplete="off"
+                  className="pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                  onClick={() => setShowConfirmNewPw(!showConfirmNewPw)}
+                  tabIndex={-1}
+                >
+                  {showConfirmNewPw ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+                </Button>
+              </div>
             </div>
             {changePwError && (
               <p className="text-sm text-destructive">{changePwError}</p>
@@ -1112,22 +1157,48 @@ export default function SettingsPage() {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>Hidden Vault Passcode</Label>
-              <Input
-                type="password"
-                placeholder="Min 6 characters"
-                value={hiddenPasscode}
-                onChange={(e) => setHiddenPasscode(e.target.value)}
-                autoComplete="off"
-              />
+              <div className="relative">
+                <Input
+                  type={showHiddenPasscode ? "text" : "password"}
+                  placeholder="Min 6 characters"
+                  value={hiddenPasscode}
+                  onChange={(e) => setHiddenPasscode(e.target.value)}
+                  autoComplete="off"
+                  className="pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                  onClick={() => setShowHiddenPasscode(!showHiddenPasscode)}
+                  tabIndex={-1}
+                >
+                  {showHiddenPasscode ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+                </Button>
+              </div>
             </div>
             <div className="space-y-2">
               <Label>Confirm Passcode</Label>
-              <Input
-                type="password"
-                value={confirmHiddenPasscode}
-                onChange={(e) => setConfirmHiddenPasscode(e.target.value)}
-                autoComplete="off"
-              />
+              <div className="relative">
+                <Input
+                  type={showConfirmHiddenPasscode ? "text" : "password"}
+                  value={confirmHiddenPasscode}
+                  onChange={(e) => setConfirmHiddenPasscode(e.target.value)}
+                  autoComplete="off"
+                  className="pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                  onClick={() => setShowConfirmHiddenPasscode(!showConfirmHiddenPasscode)}
+                  tabIndex={-1}
+                >
+                  {showConfirmHiddenPasscode ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+                </Button>
+              </div>
             </div>
           </div>
           <DialogFooter>

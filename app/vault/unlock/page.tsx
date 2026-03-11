@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Lock, Loader2, AlertTriangle, Shield } from "lucide-react";
+import { Lock, Loader2, AlertTriangle, Shield, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +15,7 @@ export default function UnlockPage() {
   const [masterPassword, setMasterPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   if (!isAuthenticated) {
     router.push("/login");
@@ -54,16 +55,29 @@ export default function UnlockPage() {
           <form onSubmit={handleUnlock} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="masterPassword">Master Password</Label>
-              <Input
-                id="masterPassword"
-                type="password"
-                placeholder="Enter your master password"
-                value={masterPassword}
-                onChange={(e) => setMasterPassword(e.target.value)}
-                required
-                autoComplete="off"
-                disabled={isLocked}
-              />
+              <div className="relative">
+                <Input
+                  id="masterPassword"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Enter your master password"
+                  value={masterPassword}
+                  onChange={(e) => setMasterPassword(e.target.value)}
+                  required
+                  autoComplete="off"
+                  disabled={isLocked}
+                  className="pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                  onClick={() => setShowPassword(!showPassword)}
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+                </Button>
+              </div>
             </div>
 
             {error && (
