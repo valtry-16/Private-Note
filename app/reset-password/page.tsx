@@ -25,25 +25,47 @@ export default function ResetPasswordPage() {
   useEffect(() => {
     const supabase = createClient();
 
-    // Check for errors in the URL hash (e.g. expired link)
+    // Check for errors or tokens in the URL hash
     const hash = window.location.hash;
     if (hash) {
       const params = new URLSearchParams(hash.substring(1));
+
+      // Handle error in hash (e.g. expired OTP before redirect)
       const hashError = params.get("error_description");
       if (hashError) {
         setLinkError(hashError.replace(/\+/g, " "));
         setSessionReady(true);
         return;
       }
+
+      // Manually extract tokens — @supabase/ssr with PKCE flow
+      // doesn't auto-detect implicit-flow hash tokens reliably
+      const accessToken = params.get("access_token");
+      const refreshToken = params.get("refresh_token");
+      const type = params.get("type");
+
+      if (accessToken && refreshToken && type === "recovery") {
+        supabase.auth
+          .setSession({ access_token: accessToken, refresh_token: refreshToken })
+          .then(({ error: sessionError }) => {
+            if (sessionError) {
+              setLinkError(sessionError.message);
+            }
+            setSessionReady(true);
+            // Clean hash from URL so refresh doesn't re-process
+            window.history.replaceState(null, "", window.location.pathname);
+          });
+        return;
+      }
     }
 
+    // Fallback: listen for PASSWORD_RECOVERY event (non-hash flows)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY") {
         setSessionReady(true);
       }
     });
 
-    // Also check if already in a recovery session
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) setSessionReady(true);
     });
