@@ -11,22 +11,31 @@ import {
   Key,
   Upload,
   User,
-  Star,
   Trash2,
   Settings,
   Loader2,
   Undo2,
+  Copy,
+  Check,
+  ChevronDown,
+  ChevronUp,
+  Globe,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { useVault } from "@/hooks/use-vault";
 import { useVaultItems } from "@/hooks/use-vault-items";
 import { createClient } from "@/supabase/client";
-import { cn } from "@/lib/utils";
+import { decrypt } from "@/encryption";
+import type {
+  DecryptedNote,
+  DecryptedPassword,
+  DecryptedDocument,
+  DecryptedPersonalInfo,
+} from "@/types/database";
 
 const typeIcons: Record<string, typeof FileText> = {
   note: FileText,
@@ -42,16 +51,16 @@ const typeLabels: Record<string, string> = {
   personal: "Personal Info",
 };
 
-const typeRoutes: Record<string, string> = {
-  note: "notes",
-  password: "passwords",
-  document: "documents",
-  personal: "personal",
-};
+type DecryptedContent =
+  | { type: "note"; data: DecryptedNote }
+  | { type: "password"; data: DecryptedPassword }
+  | { type: "document"; data: DecryptedDocument }
+  | { type: "personal"; data: DecryptedPersonalInfo };
 
 export default function HiddenVaultPage() {
   const router = useRouter();
   const {
+    masterPassword,
     isHiddenVaultSetup,
     isHiddenVaultUnlocked,
     unlockHiddenVault,
@@ -64,6 +73,13 @@ export default function HiddenVaultPage() {
   const [unlocking, setUnlocking] = useState(false);
   const [error, setError] = useState("");
   const [showPasscode, setShowPasscode] = useState(false);
+
+  // Content viewing state
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [decryptedContent, setDecryptedContent] = useState<Record<string, DecryptedContent>>({});
+  const [loadingContent, setLoadingContent] = useState<string | null>(null);
+  const [copiedField, setCopiedField] = useState<string>("");
+  const [showPasswordFields, setShowPasswordFields] = useState<Record<string, boolean>>({});
 
   const hiddenItems = items.filter((i) => i.is_hidden);
 
@@ -78,17 +94,66 @@ export default function HiddenVaultPage() {
     setUnlocking(false);
   }
 
+  async function loadContent(itemId: string, itemType: string) {
+    if (decryptedContent[itemId]) {
+      setExpandedId(expandedId === itemId ? null : itemId);
+      return;
+    }
+    if (!masterPassword) return;
+    setLoadingContent(itemId);
+    try {
+      const { data } = await supabase
+        .from("vault_items")
+        .select("encrypted_data, type")
+        .eq("id", itemId)
+        .single();
+      if (data) {
+        const decrypted = JSON.parse(await decrypt(data.encrypted_data, masterPassword));
+        setDecryptedContent((prev) => ({
+          ...prev,
+          [itemId]: { type: data.type, data: decrypted },
+        }));
+        setExpandedId(itemId);
+      }
+    } catch {
+      setError("Failed to decrypt item");
+    }
+    setLoadingContent(null);
+  }
+
   async function unhideItem(id: string) {
     await supabase
       .from("vault_items")
       .update({ is_hidden: false, updated_at: new Date().toISOString() })
       .eq("id", id);
+    setDecryptedContent((prev) => {
+      const copy = { ...prev };
+      delete copy[id];
+      return copy;
+    });
+    if (expandedId === id) setExpandedId(null);
     refetch();
   }
 
   async function deleteItem(id: string) {
     await supabase.from("vault_items").delete().eq("id", id);
+    setDecryptedContent((prev) => {
+      const copy = { ...prev };
+      delete copy[id];
+      return copy;
+    });
+    if (expandedId === id) setExpandedId(null);
     refetch();
+  }
+
+  function copyToClipboard(text: string, fieldKey: string) {
+    navigator.clipboard.writeText(text);
+    setCopiedField(fieldKey);
+    setTimeout(() => setCopiedField(""), 2000);
+  }
+
+  function togglePasswordVisibility(key: string) {
+    setShowPasswordFields((prev) => ({ ...prev, [key]: !prev[key] }));
   }
 
   // Not set up yet
@@ -173,6 +238,131 @@ export default function HiddenVaultPage() {
     );
   }
 
+  // Render decrypted content based on type
+  function renderContent(itemId: string) {
+    const content = decryptedContent[itemId];
+    if (!content) return null;
+
+    switch (content.type) {
+      case "note": {
+        const note = content.data as DecryptedNote;
+        return (
+          <div className="space-y-2 pt-3">
+            <div className="rounded-md bg-muted/50 p-3 text-sm whitespace-pre-wrap">
+              {note.content || "No content"}
+            </div>
+          </div>
+        );
+      }
+      case "password": {
+        const pw = content.data as DecryptedPassword;
+        const pwKey = `${itemId}-password`;
+        return (
+          <div className="space-y-3 pt-3">
+            {pw.website && (
+              <div className="flex items-center gap-2 text-sm">
+                <Globe className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <span className="truncate">{pw.website}</span>
+              </div>
+            )}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between rounded-md bg-muted/50 p-2">
+                <div className="min-w-0">
+                  <p className="text-xs text-muted-foreground">Username</p>
+                  <p className="truncate text-sm font-mono">{pw.username}</p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 shrink-0"
+                  onClick={() => copyToClipboard(pw.username, `${itemId}-user`)}
+                >
+                  {copiedField === `${itemId}-user` ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                </Button>
+              </div>
+              <div className="flex items-center justify-between rounded-md bg-muted/50 p-2">
+                <div className="min-w-0">
+                  <p className="text-xs text-muted-foreground">Password</p>
+                  <p className="truncate text-sm font-mono">
+                    {showPasswordFields[pwKey] ? pw.password : "••••••••••"}
+                  </p>
+                </div>
+                <div className="flex shrink-0 gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={() => togglePasswordVisibility(pwKey)}
+                  >
+                    {showPasswordFields[pwKey] ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={() => copyToClipboard(pw.password, `${itemId}-pass`)}
+                  >
+                    {copiedField === `${itemId}-pass` ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                  </Button>
+                </div>
+              </div>
+            </div>
+            {pw.notes && (
+              <p className="text-xs text-muted-foreground">{pw.notes}</p>
+            )}
+          </div>
+        );
+      }
+      case "document": {
+        const doc = content.data as DecryptedDocument;
+        return (
+          <div className="space-y-2 pt-3">
+            <div className="rounded-md bg-muted/50 p-2 text-sm">
+              <p><span className="text-muted-foreground">File:</span> {doc.fileName}</p>
+              <p><span className="text-muted-foreground">Type:</span> {doc.fileType}</p>
+              <p><span className="text-muted-foreground">Size:</span> {(doc.fileSize / 1024).toFixed(1)} KB</p>
+            </div>
+            {doc.notes && <p className="text-xs text-muted-foreground">{doc.notes}</p>}
+          </div>
+        );
+      }
+      case "personal": {
+        const info = content.data as DecryptedPersonalInfo;
+        return (
+          <div className="space-y-2 pt-3">
+            <Badge variant="secondary" className="text-[10px]">{info.category}</Badge>
+            <div className="space-y-1">
+              {info.fields.map((field, i) => {
+                const fKey = `${itemId}-field-${i}`;
+                return (
+                  <div key={i} className="flex items-center justify-between rounded-md bg-muted/50 p-2">
+                    <div className="min-w-0">
+                      <p className="text-xs text-muted-foreground">{field.label}</p>
+                      <p className="truncate text-sm font-mono">
+                        {showPasswordFields[fKey] ? field.value : "••••••••"}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 gap-1">
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => togglePasswordVisibility(fKey)}>
+                        {showPasswordFields[fKey] ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => copyToClipboard(field.value, fKey)}>
+                        {copiedField === fKey ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {info.notes && <p className="text-xs text-muted-foreground">{info.notes}</p>}
+          </div>
+        );
+      }
+      default:
+        return null;
+    }
+  }
+
   // Unlocked — show hidden items
   return (
     <div className="p-4 sm:p-6 lg:p-8">
@@ -196,7 +386,7 @@ export default function HiddenVaultPage() {
             <EyeOff className="mx-auto mb-3 h-12 w-12 text-muted-foreground opacity-50" />
             <p className="text-muted-foreground">No hidden items yet</p>
             <p className="mt-1 text-xs text-muted-foreground">
-              Use the eye icon on any item in your vault to move it here
+              Use the ⋮ menu on any item in your vault to hide it here
             </p>
           </CardContent>
         </Card>
@@ -204,46 +394,65 @@ export default function HiddenVaultPage() {
         <div className="space-y-2">
           {hiddenItems.map((item) => {
             const Icon = typeIcons[item.type] || FileText;
+            const isExpanded = expandedId === item.id;
+            const isLoading = loadingContent === item.id;
             return (
-              <Card key={item.id} className="transition-colors hover:bg-accent/50">
-                <CardContent className="flex items-center gap-4 p-4">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                    <Icon className="h-5 w-5 text-primary" />
-                  </div>
-                  <div
-                    className="min-w-0 flex-1 cursor-pointer"
-                    onClick={() =>
-                      router.push(`/vault/${typeRoutes[item.type]}?id=${item.id}`)
-                    }
-                  >
-                    <p className="truncate font-medium">{item.title}</p>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Badge variant="secondary" className="text-[10px]">
-                        {typeLabels[item.type]}
-                      </Badge>
-                      <span>{new Date(item.updated_at).toLocaleDateString()}</span>
+              <Card key={item.id} className="transition-colors">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                      <Icon className="h-5 w-5 text-primary" />
+                    </div>
+                    <div
+                      className="min-w-0 flex-1 cursor-pointer"
+                      onClick={() => loadContent(item.id, item.type)}
+                    >
+                      <p className="truncate font-medium">{item.title}</p>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Badge variant="secondary" className="text-[10px]">
+                          {typeLabels[item.type]}
+                        </Badge>
+                        <span>{new Date(item.updated_at).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        title="View content"
+                        onClick={() => loadContent(item.id, item.type)}
+                        disabled={isLoading}
+                      >
+                        {isLoading ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : isExpanded ? (
+                          <ChevronUp className="h-4 w-4" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4" />
+                        )}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        title="Move back to main vault"
+                        onClick={() => unhideItem(item.id)}
+                      >
+                        <Undo2 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive"
+                        title="Delete"
+                        onClick={() => deleteItem(item.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
-                  <div className="flex shrink-0 items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      title="Move back to main vault"
-                      onClick={() => unhideItem(item.id)}
-                    >
-                      <Undo2 className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-destructive"
-                      title="Delete"
-                      onClick={() => deleteItem(item.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  {isExpanded && renderContent(item.id)}
                 </CardContent>
               </Card>
             );

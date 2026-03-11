@@ -4,6 +4,11 @@ import { createServerSupabaseClient } from "@/supabase/server";
 
 export const dynamic = "force-dynamic";
 
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
 export async function POST(request: NextRequest) {
   try {
     // Verify the user is authenticated via Supabase cookie session
@@ -23,12 +28,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
-
-    const { error } = await supabase.from("shared_links").insert({
+    const { error } = await supabaseAdmin.from("shared_links").insert({
       user_id: user.id,
       item_id,
       encrypted_data,
@@ -38,9 +38,9 @@ export async function POST(request: NextRequest) {
     });
 
     if (error) {
-      console.error("Failed to insert shared_link:", error.message, error.code);
+      console.error("Failed to insert shared_link:", error.message, error.code, error.details, error.hint);
       return NextResponse.json(
-        { error: "Failed to create share link" },
+        { error: `Failed to create share link: ${error.message}` },
         { status: 500 }
       );
     }

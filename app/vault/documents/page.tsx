@@ -226,9 +226,9 @@ export default function DocumentsPage() {
       setPreviewUrl(url);
       setPreviewType(docInfo.fileType);
       setPreviewName(docInfo.fileName);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Preview failed:", err);
-      setPreviewError("Failed to preview file.");
+      setPreviewError(err?.message || "Failed to preview file.");
     }
 
     setPreviewing(null);
@@ -456,11 +456,27 @@ export default function DocumentsPage() {
                   />
                 )}
                 {previewType === "application/pdf" && previewUrl && (
-                  <iframe
-                    src={previewUrl}
-                    title={previewName}
-                    className="h-[70vh] w-full rounded border-0"
-                  />
+                  <div className="flex h-[70vh] w-full flex-col">
+                    <embed
+                      src={`${previewUrl}#toolbar=1`}
+                      type="application/pdf"
+                      className="h-full w-full rounded"
+                    />
+                    <div className="mt-2 flex justify-center">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const a = document.createElement("a");
+                          a.href = previewUrl;
+                          a.download = previewName;
+                          a.click();
+                        }}
+                      >
+                        <Download className="mr-1 h-3 w-3" /> Download PDF
+                      </Button>
+                    </div>
+                  </div>
                 )}
                 {previewType.startsWith("text/") && previewUrl && (
                   <iframe
