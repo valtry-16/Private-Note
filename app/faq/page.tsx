@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Shield, ArrowLeft, ChevronDown } from "lucide-react";
+import { ArrowLeft, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ZeroVaultLogo } from "@/components/ui/logo";
 
 interface FAQItem {
   question: string;
@@ -230,7 +231,7 @@ function FAQAccordion({ item }: { item: FAQItem }) {
     <div className="border-b">
       <button
         onClick={() => setOpen(!open)}
-        className="flex w-full items-center justify-between py-4 text-left text-sm font-medium hover:text-primary"
+        className="flex w-full items-center justify-between px-4 py-4 text-left text-sm font-medium hover:text-primary"
       >
         <span>{item.question}</span>
         <ChevronDown
@@ -241,7 +242,7 @@ function FAQAccordion({ item }: { item: FAQItem }) {
         />
       </button>
       {open && (
-        <div className="pb-4 text-sm leading-relaxed text-muted-foreground">
+        <div className="px-4 pb-4 text-sm leading-relaxed text-muted-foreground">
           {item.answer}
         </div>
       )}
@@ -256,7 +257,7 @@ export default function FAQPage() {
       <nav className="border-b">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
           <Link href="/" className="flex items-center gap-2">
-            <Shield className="h-8 w-8 text-primary" />
+            <ZeroVaultLogo className="h-8 w-8" />
             <span className="text-xl font-bold">ZeroVault</span>
           </Link>
           <Link
@@ -307,7 +308,7 @@ export default function FAQPage() {
       <footer className="border-t py-8">
         <div className="container mx-auto flex items-center justify-between px-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
-            <Shield className="h-4 w-4" />
+            <ZeroVaultLogo className="h-5 w-5" />
             <span>ZeroVault</span>
           </div>
           <div className="flex items-center gap-4">

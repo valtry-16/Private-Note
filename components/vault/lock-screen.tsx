@@ -156,7 +156,6 @@ export function VaultLockScreen() {
                 onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ""))}
                 required
                 autoComplete="off"
-                autoFocus
                 className="text-center text-2xl tracking-[0.5em]"
               />
               {error && <p className="text-sm text-destructive">{error}</p>}
@@ -203,7 +202,6 @@ export function VaultLockScreen() {
                 onChange={(e) => setRecoveryKey(e.target.value)}
                 required
                 autoComplete="off"
-                autoFocus
                 className="font-mono text-sm"
               />
               {error && <p className="text-sm text-destructive">{error}</p>}

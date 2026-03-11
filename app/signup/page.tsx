@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { createClient } from "@/supabase/client";
 import { generateVerificationToken, generateRecoveryKey, encrypt } from "@/encryption";
+import { ZeroVaultLogo } from "@/components/ui/logo";
 
 export default function SignupPage() {
   const router = useRouter();

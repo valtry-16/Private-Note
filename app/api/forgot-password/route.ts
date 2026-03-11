@@ -4,19 +4,20 @@ import { BrevoClient } from "@getbrevo/brevo";
 
 export async function POST(request: Request) {
   try {
-    const { email, origin } = await request.json();
+    const { email } = await request.json();
 
     if (!email || typeof email !== "string") {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
     }
 
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://zero-vault-storage.vercel.app";
     const supabase = createAdminClient();
 
     // Generate password recovery link via admin API
     const { data, error } = await supabase.auth.admin.generateLink({
       type: "recovery",
       email,
-      options: { redirectTo: `${origin}/reset-password` },
+      options: { redirectTo: `${siteUrl}/reset-password` },
     });
 
     if (error || !data?.properties?.action_link) {

@@ -271,7 +271,6 @@ export default function TagsPage() {
                 value={tagName}
                 onChange={(e) => setTagName(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSave()}
-                autoFocus
               />
             </div>
             <div className="space-y-2">

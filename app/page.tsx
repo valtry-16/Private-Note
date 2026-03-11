@@ -1,6 +1,5 @@
 import Link from "next/link";
 import {
-  Shield,
   Lock,
   Eye,
   FileText,
@@ -8,8 +7,10 @@ import {
   Server,
   ArrowRight,
   CheckCircle2,
+  Shield,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ZeroVaultLogo } from "@/components/ui/logo";
 
 export default function LandingPage() {
   return (
@@ -18,7 +19,7 @@ export default function LandingPage() {
       <nav className="border-b">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
           <div className="flex items-center gap-2">
-            <Shield className="h-8 w-8 text-primary" />
+            <ZeroVaultLogo className="h-8 w-8" />
             <span className="text-xl font-bold">ZeroVault</span>
           </div>
           <div className="flex items-center gap-3">
@@ -185,7 +186,7 @@ export default function LandingPage() {
       <footer className="border-t py-8">
         <div className="container mx-auto flex flex-col items-center justify-between gap-4 px-4 text-sm text-muted-foreground sm:flex-row">
           <div className="flex items-center gap-2">
-            <Shield className="h-4 w-4" />
+            <ZeroVaultLogo className="h-5 w-5" />
             <span>ZeroVault</span>
           </div>
           <p>Zero-knowledge encrypted vault. Your data, your keys, your privacy.</p>

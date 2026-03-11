@@ -272,7 +272,6 @@ export default function FoldersPage() {
                 value={folderName}
                 onChange={(e) => setFolderName(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSave()}
-                autoFocus
               />
             </div>
           </div>

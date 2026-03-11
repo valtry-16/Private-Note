@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Shield, ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
+import { ZeroVaultLogo } from "@/components/ui/logo";
 
 export default function PrivacyPolicyPage() {
   return (
@@ -10,7 +11,7 @@ export default function PrivacyPolicyPage() {
       <nav className="border-b">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
           <Link href="/" className="flex items-center gap-2">
-            <Shield className="h-8 w-8 text-primary" />
+            <ZeroVaultLogo className="h-8 w-8" />
             <span className="text-xl font-bold">ZeroVault</span>
           </Link>
           <Link
@@ -312,7 +313,7 @@ export default function PrivacyPolicyPage() {
       <footer className="border-t py-8">
         <div className="container mx-auto flex items-center justify-between px-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
-            <Shield className="h-4 w-4" />
+            <ZeroVaultLogo className="h-5 w-5" />
             <span>ZeroVault</span>
           </div>
           <div className="flex items-center gap-4">

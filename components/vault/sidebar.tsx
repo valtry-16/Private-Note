@@ -36,6 +36,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useVault } from "@/hooks/use-vault";
+import { ZeroVaultLogo } from "@/components/ui/logo";
 
 const navItems = [
   { href: "/vault", icon: Search, label: "Dashboard" },
@@ -106,7 +107,7 @@ export function Sidebar({ mobileOpen, setMobileOpen }: SidebarProps) {
       <div className="flex h-16 items-center justify-between border-b px-4">
         {!collapsed && (
           <div className="flex items-center gap-2">
-            <Shield className="h-6 w-6 text-primary" />
+            <ZeroVaultLogo className="h-6 w-6" />
             <span className="font-bold">ZeroVault</span>
           </div>
         )}

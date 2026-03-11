@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
   Upload,
@@ -71,9 +71,39 @@ export default function DocumentsPage() {
   const [previewName, setPreviewName] = useState<string>("");
   const [previewError, setPreviewError] = useState<string>("");
   const [previewing, setPreviewing] = useState<string | null>(null);
+  const [storageUsed, setStorageUsed] = useState(0);
+  const [storageLimit, setStorageLimit] = useState(50 * 1024 * 1024);
+  const [storageLoading, setStorageLoading] = useState(true);
+
+  const fetchStorage = useCallback(async () => {
+    try {
+      const supabaseClient = createClient();
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (!session?.access_token) return;
+      const res = await fetch("/api/storage", {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setStorageUsed(data.usedBytes);
+        setStorageLimit(data.limitBytes);
+      }
+    } catch {} finally {
+      setStorageLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchStorage(); }, [fetchStorage]);
 
   async function handleUpload() {
     if (!selectedFile || !user || !masterPassword) return;
+
+    // Check storage limit before uploading
+    if (storageUsed + selectedFile.size > storageLimit) {
+      alert(`Storage limit exceeded. You have ${formatFileSize(storageLimit - storageUsed)} remaining but the file is ${formatFileSize(selectedFile.size)}.`);
+      return;
+    }
+
     setUploading(true);
 
     try {
@@ -115,6 +145,7 @@ export default function DocumentsPage() {
 
       resetForm();
       refetch();
+      fetchStorage();
     } catch (err) {
       console.error("Upload failed:", err);
     }
@@ -271,9 +302,41 @@ export default function DocumentsPage() {
             Files are encrypted in your browser before upload
           </p>
         </div>
-        <Button onClick={() => setDialogOpen(true)}>
+        <Button onClick={() => setDialogOpen(true)} disabled={storageUsed >= storageLimit}>
           <Upload className="mr-1 h-4 w-4" /> Upload
         </Button>
+      </div>
+
+      {/* Storage Usage */}
+      <div className="mb-6 rounded-lg border bg-card p-4">
+        <div className="flex items-center justify-between text-sm">
+          <div className="flex items-center gap-2">
+            <HardDrive className="h-4 w-4 text-muted-foreground" />
+            <span className="font-medium">Storage</span>
+          </div>
+          {storageLoading ? (
+            <span className="text-muted-foreground">Loading...</span>
+          ) : (
+            <span className="text-muted-foreground">
+              {formatFileSize(storageUsed)} / {formatFileSize(storageLimit)}
+            </span>
+          )}
+        </div>
+        <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted">
+          <div
+            className={`h-full rounded-full transition-all ${
+              storageUsed / storageLimit > 0.9
+                ? "bg-destructive"
+                : storageUsed / storageLimit > 0.7
+                ? "bg-yellow-500"
+                : "bg-primary"
+            }`}
+            style={{ width: `${Math.min(100, (storageUsed / storageLimit) * 100)}%` }}
+          />
+        </div>
+        {storageUsed / storageLimit > 0.9 && (
+          <p className="mt-1 text-xs text-destructive">Storage almost full. Delete unused files to free space.</p>
+        )}
       </div>
 
       {/* Search */}

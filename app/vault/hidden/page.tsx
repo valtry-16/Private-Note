@@ -206,7 +206,6 @@ export default function HiddenVaultPage() {
                     placeholder="Enter passcode"
                     value={passcode}
                     onChange={(e) => setPasscode(e.target.value)}
-                    autoFocus
                     autoComplete="off"
                     className="pr-10"
                   />

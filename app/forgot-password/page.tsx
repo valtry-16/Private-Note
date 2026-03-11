@@ -23,7 +23,7 @@ export default function ForgotPasswordPage() {
       const res = await fetch("/api/forgot-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, origin: window.location.origin }),
+        body: JSON.stringify({ email }),
       });
 
       if (!res.ok) {
@@ -86,7 +86,6 @@ export default function ForgotPasswordPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 autoComplete="email"
-                autoFocus
               />
             </div>
 
