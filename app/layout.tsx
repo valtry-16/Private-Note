@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   description:
     "Secure your secrets with zero-knowledge encryption. Store notes, passwords, documents, and personal information with military-grade security.",
   manifest: "/manifest.json",
-  icons: { icon: "/icon-192.png", apple: "/icon-512.png" },
+  icons: { icon: [{ url: "/icon-192.png" }, { url: "/icon-192.svg", type: "image/svg+xml" }], apple: "/icon-512.png", shortcut: "/icon-192.png" },
 };
 
 export const viewport: Viewport = {

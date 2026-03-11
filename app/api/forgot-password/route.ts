@@ -25,6 +25,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true });
     }
 
+    // Ensure the action link uses the production URL, not localhost
+    const actionLink = data.properties.action_link.replace(
+      /https?:\/\/localhost:\d+/,
+      siteUrl
+    );
+
     // Send the reset email via Brevo
     const brevo = new BrevoClient({ apiKey: process.env.BREVO_API_KEY! });
     await brevo.transactionalEmails.sendTransacEmail({
@@ -40,7 +46,7 @@ export async function POST(request: Request) {
           <p>We received a request to reset the account password for <strong>${email}</strong>.</p>
           <p>Click the button below to set a new account password:</p>
           <div style="text-align: center; margin: 30px 0;">
-            <a href="${data.properties.action_link}" 
+            <a href="${actionLink}" 
                style="display: inline-block; background: #1d4ed8; color: #fff; padding: 12px 30px; border-radius: 6px; text-decoration: none; font-weight: 600;">
               Reset Password
             </a>

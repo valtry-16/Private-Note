@@ -11,6 +11,7 @@ import { VaultLockScreen } from "@/components/vault/lock-screen";
 export default function VaultLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { isAuthenticated, isVaultUnlocked } = useVault();
+  const [mobileOpen, setMobileOpen] = useState(false);
   useAutoLock(60_000);
 
   useEffect(() => {
@@ -26,8 +27,6 @@ export default function VaultLayout({ children }: { children: React.ReactNode })
   if (!isVaultUnlocked) {
     return <VaultLockScreen />;
   }
-
-  const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
