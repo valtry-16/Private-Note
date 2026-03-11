@@ -145,6 +145,8 @@ export interface Database {
           totp_enabled: boolean;
           webauthn_credential_id: string | null;
           webauthn_public_key: string | null;
+          recovery_master: string | null;
+          encrypted_recovery_key: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -162,6 +164,8 @@ export interface Database {
           totp_enabled?: boolean;
           webauthn_credential_id?: string | null;
           webauthn_public_key?: string | null;
+          recovery_master?: string | null;
+          encrypted_recovery_key?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -177,6 +181,8 @@ export interface Database {
           totp_enabled?: boolean;
           webauthn_credential_id?: string | null;
           webauthn_public_key?: string | null;
+          recovery_master?: string | null;
+          encrypted_recovery_key?: string | null;
           updated_at?: string;
         };
         Relationships: [];

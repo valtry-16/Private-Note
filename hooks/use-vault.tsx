@@ -15,6 +15,12 @@ interface VaultContextType {
   signOut: () => Promise<void>;
   failedAttempts: number;
   isLocked: boolean;
+  // 2FA
+  needs2FA: boolean;
+  verify2FA: (token: string) => Promise<boolean>;
+  cancel2FA: () => void;
+  // Recovery
+  recoverWithKey: (recoveryKey: string) => Promise<boolean>;
   // Hidden vault
   isHiddenVaultSetup: boolean;
   isHiddenVaultUnlocked: boolean;
@@ -35,6 +41,8 @@ export function VaultProvider({ children }: { children: ReactNode }) {
   const [lockedUntil, setLockedUntil] = useState<number | null>(null);
   const [hiddenVaultHash, setHiddenVaultHash] = useState<string | null>(null);
   const [isHiddenVaultUnlocked, setIsHiddenVaultUnlocked] = useState(false);
+  const [needs2FA, setNeeds2FA] = useState(false);
+  const [pending2FAPassword, setPending2FAPassword] = useState<string | null>(null);
   const supabase = createClient();
 
   useEffect(() => {
@@ -51,6 +59,31 @@ export function VaultProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const isLocked = lockedUntil !== null && Date.now() < lockedUntil;
+
+  const finalizeUnlock = useCallback(
+    async (password: string) => {
+      if (!user) return;
+      setMasterPassword(password);
+      setFailedAttempts(0);
+      setLockedUntil(null);
+      const { data: fullProfile } = await supabase
+        .from("user_profiles")
+        .select("hidden_vault_hash")
+        .eq("user_id", user.id)
+        .single();
+      setHiddenVaultHash(fullProfile?.hidden_vault_hash ?? null);
+      await supabase.from("security_logs").insert({
+        user_id: user.id,
+        event_type: "vault_unlock",
+        user_agent: navigator.userAgent,
+      });
+      await supabase
+        .from("user_profiles")
+        .update({ last_active_at: new Date().toISOString() })
+        .eq("user_id", user.id);
+    },
+    [user]
+  );
 
   const unlockVault = useCallback(
     async (password: string): Promise<boolean> => {
@@ -71,27 +104,24 @@ export function VaultProvider({ children }: { children: ReactNode }) {
       );
 
       if (valid) {
-        setMasterPassword(password);
-        setFailedAttempts(0);
-        setLockedUntil(null);
-        // Load hidden vault setup status
-        const { data: fullProfile } = await supabase
-          .from("user_profiles")
-          .select("hidden_vault_hash")
-          .eq("user_id", user.id)
-          .single();
-        setHiddenVaultHash(fullProfile?.hidden_vault_hash ?? null);
-        // Log successful unlock
-        await supabase.from("security_logs").insert({
-          user_id: user.id,
-          event_type: "vault_unlock",
-          user_agent: navigator.userAgent,
-        });
-        // Track activity for dead man's switch
-        await supabase
-          .from("user_profiles")
-          .update({ last_active_at: new Date().toISOString() })
-          .eq("user_id", user.id);
+        // Check if 2FA is enabled before unlocking
+        try {
+          const res = await fetch("/api/totp/verify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ userId: user.id, action: "check" }),
+          });
+          const data = await res.json();
+          if (data.enabled) {
+            // 2FA required — don't set masterPassword yet
+            setPending2FAPassword(password);
+            setNeeds2FA(true);
+            return true;
+          }
+        } catch {
+          // If 2FA check fails, proceed without 2FA
+        }
+        await finalizeUnlock(password);
         return true;
       } else {
         const newAttempts = failedAttempts + 1;
@@ -107,12 +137,66 @@ export function VaultProvider({ children }: { children: ReactNode }) {
         return false;
       }
     },
-    [user, failedAttempts, isLocked]
+    [user, failedAttempts, isLocked, finalizeUnlock]
+  );
+
+  const verify2FA = useCallback(
+    async (token: string): Promise<boolean> => {
+      if (!pending2FAPassword || !user) return false;
+      try {
+        const res = await fetch("/api/totp/verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: user.id, token }),
+        });
+        const data = await res.json();
+        if (data.valid) {
+          await finalizeUnlock(pending2FAPassword);
+          setPending2FAPassword(null);
+          setNeeds2FA(false);
+          return true;
+        }
+      } catch {
+        // verification failed
+      }
+      return false;
+    },
+    [pending2FAPassword, user, finalizeUnlock]
+  );
+
+  const cancel2FA = useCallback(() => {
+    setNeeds2FA(false);
+    setPending2FAPassword(null);
+  }, []);
+
+  const recoverWithKey = useCallback(
+    async (recoveryKey: string): Promise<boolean> => {
+      if (!user) return false;
+      try {
+        const { data: profile } = await supabase
+          .from("user_profiles")
+          .select("recovery_master")
+          .eq("user_id", user.id)
+          .single();
+        if (!profile?.recovery_master) return false;
+        const recovered = await decrypt(profile.recovery_master, recoveryKey);
+        if (recovered) {
+          await finalizeUnlock(recovered);
+          return true;
+        }
+      } catch {
+        return false;
+      }
+      return false;
+    },
+    [user, finalizeUnlock]
   );
 
   const lockVault = useCallback(() => {
     setMasterPassword(null);
     setIsHiddenVaultUnlocked(false);
+    setNeeds2FA(false);
+    setPending2FAPassword(null);
   }, []);
 
   const unlockHiddenVault = useCallback(
@@ -163,6 +247,10 @@ export function VaultProvider({ children }: { children: ReactNode }) {
         signOut,
         failedAttempts,
         isLocked,
+        needs2FA,
+        verify2FA,
+        cancel2FA,
+        recoverWithKey,
         isHiddenVaultSetup: !!hiddenVaultHash,
         isHiddenVaultUnlocked,
         unlockHiddenVault,

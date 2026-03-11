@@ -4,6 +4,7 @@ export {
   encryptFile,
   decryptFile,
   generateVerificationToken,
+  generateRecoveryKey,
   verifyMasterPassword,
   hashForBreachCheck,
   generatePassword,

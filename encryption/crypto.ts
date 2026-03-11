@@ -164,6 +164,15 @@ export async function generateVerificationToken(
   return encrypt(VERIFICATION_PLAINTEXT, masterPassword);
 }
 
+export function generateRecoveryKey(): string {
+  const bytes = getRandomBytes(24);
+  const hex = Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+  // Format as 8 groups of 6 chars separated by hyphens for readability
+  return hex.match(/.{1,6}/g)!.join("-").toUpperCase();
+}
+
 export async function verifyMasterPassword(
   masterPassword: string,
   encryptedVerification: string

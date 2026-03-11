@@ -1,14 +1,24 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Lock, Loader2, ShieldCheck, Fingerprint, Eye, EyeOff } from "lucide-react";
+import { Lock, Loader2, ShieldCheck, Fingerprint, Eye, EyeOff, KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useVault } from "@/hooks/use-vault";
 
 export function VaultLockScreen() {
-  const { unlockVault, signOut, failedAttempts, isLocked, user } = useVault();
+  const {
+    unlockVault,
+    signOut,
+    failedAttempts,
+    isLocked,
+    user,
+    needs2FA,
+    verify2FA,
+    cancel2FA,
+    recoverWithKey,
+  } = useVault();
   const [masterPassword, setMasterPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -16,12 +26,13 @@ export function VaultLockScreen() {
   const [showPassword, setShowPassword] = useState(false);
 
   // 2FA state
-  const [needs2FA, setNeeds2FA] = useState(false);
   const [totpCode, setTotpCode] = useState("");
-  const [pendingPassword, setPendingPassword] = useState("");
+
+  // Recovery state
+  const [showRecovery, setShowRecovery] = useState(false);
+  const [recoveryKey, setRecoveryKey] = useState("");
 
   useEffect(() => {
-    // Check if biometric unlock is set up for this user
     if (user && window.PublicKeyCredential) {
       const stored = localStorage.getItem(`zv_bio_${user.id}`);
       if (stored) {
@@ -35,7 +46,6 @@ export function VaultLockScreen() {
     setError("");
     setLoading(true);
     try {
-      // Get challenge
       const challengeRes = await fetch("/api/webauthn", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -46,7 +56,6 @@ export function VaultLockScreen() {
 
       const credIdBytes = Uint8Array.from(atob(checkData.credentialId), (c) => c.charCodeAt(0));
 
-      // Get a fresh challenge
       const chRes = await fetch("/api/webauthn", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -54,7 +63,6 @@ export function VaultLockScreen() {
       });
       const { challenge } = await chRes.json();
 
-      // Request biometric authentication
       const assertion = await navigator.credentials.get({
         publicKey: {
           challenge: Uint8Array.from(atob(challenge.replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0)),
@@ -66,7 +74,6 @@ export function VaultLockScreen() {
 
       if (!assertion) throw new Error("Authentication cancelled");
 
-      // Biometric verified — retrieve stored password
       const stored = localStorage.getItem(`zv_bio_${user.id}`);
       if (!stored) throw new Error("No stored credentials");
 
@@ -91,32 +98,14 @@ export function VaultLockScreen() {
     setLoading(true);
 
     const success = await unlockVault(masterPassword);
-    if (success) {
-      // Check if 2FA is enabled
-      try {
-        const res = await fetch("/api/totp/verify", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId: user?.id, action: "check" }),
-        });
-        const data = await res.json();
-        if (!data.enabled) {
-          // 2FA not enabled, proceed normally (already unlocked)
-          return;
-        }
-        // 2FA is enabled — show TOTP form
-        setPendingPassword(masterPassword);
-        setNeeds2FA(true);
-        setMasterPassword("");
-      } catch {
-        // If check fails, proceed normally
-      }
-    } else {
+    if (!success) {
       if (isLocked) {
         setError("Temporarily locked due to too many failed attempts.");
       } else {
         setError("Incorrect master password.");
       }
+      setMasterPassword("");
+    } else {
       setMasterPassword("");
     }
     setLoading(false);
@@ -126,30 +115,26 @@ export function VaultLockScreen() {
     e.preventDefault();
     setError("");
     setLoading(true);
-    try {
-      const res = await fetch("/api/totp/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user?.id, token: totpCode }),
-      });
-      const data = await res.json();
-      if (data.valid) {
-        // 2FA passed — vault is already unlocked
-        setNeeds2FA(false);
-        setPendingPassword("");
-        setTotpCode("");
-        // Force re-render by reloading
-        window.location.reload();
-      } else {
-        setError("Invalid authentication code. Please try again.");
-        setTotpCode("");
-      }
-    } catch {
-      setError("Verification failed. Please try again.");
+    const success = await verify2FA(totpCode);
+    if (!success) {
+      setError("Invalid authentication code. Please try again.");
+      setTotpCode("");
     }
     setLoading(false);
   };
 
+  const handleRecover = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    const success = await recoverWithKey(recoveryKey.trim());
+    if (!success) {
+      setError("Invalid recovery key. Please check and try again.");
+    }
+    setLoading(false);
+  };
+
+  // 2FA form
   if (needs2FA) {
     return (
       <div className="flex min-h-screen items-center justify-center p-4">
@@ -171,11 +156,10 @@ export function VaultLockScreen() {
                 onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ""))}
                 required
                 autoComplete="off"
+                autoFocus
                 className="text-center text-2xl tracking-[0.5em]"
               />
-              {error && (
-                <p className="text-sm text-destructive">{error}</p>
-              )}
+              {error && <p className="text-sm text-destructive">{error}</p>}
               <Button type="submit" className="w-full" disabled={loading || totpCode.length !== 6}>
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Verify
@@ -184,8 +168,7 @@ export function VaultLockScreen() {
                 variant="ghost"
                 className="w-full"
                 onClick={() => {
-                  setNeeds2FA(false);
-                  setPendingPassword("");
+                  cancel2FA();
                   setTotpCode("");
                   setError("");
                 }}
@@ -199,6 +182,54 @@ export function VaultLockScreen() {
     );
   }
 
+  // Recovery key form
+  if (showRecovery) {
+    return (
+      <div className="flex min-h-screen items-center justify-center p-4">
+        <Card className="w-full max-w-sm">
+          <CardHeader className="text-center">
+            <KeyRound className="mx-auto mb-2 h-10 w-10 text-primary" />
+            <CardTitle>Recovery Key</CardTitle>
+            <CardDescription>
+              Enter the recovery key you saved when creating your account
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleRecover} className="space-y-4">
+              <Input
+                type="text"
+                placeholder="Enter your recovery key"
+                value={recoveryKey}
+                onChange={(e) => setRecoveryKey(e.target.value)}
+                required
+                autoComplete="off"
+                autoFocus
+                className="font-mono text-sm"
+              />
+              {error && <p className="text-sm text-destructive">{error}</p>}
+              <Button type="submit" className="w-full" disabled={loading || !recoveryKey.trim()}>
+                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Recover Vault
+              </Button>
+              <Button
+                variant="ghost"
+                className="w-full"
+                onClick={() => {
+                  setShowRecovery(false);
+                  setRecoveryKey("");
+                  setError("");
+                }}
+              >
+                Back
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Master password form
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
       <Card className="w-full max-w-sm">
@@ -231,9 +262,7 @@ export function VaultLockScreen() {
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </Button>
             </div>
-            {error && (
-              <p className="text-sm text-destructive">{error}</p>
-            )}
+            {error && <p className="text-sm text-destructive">{error}</p>}
             <Button type="submit" className="w-full" disabled={loading || isLocked}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Unlock
@@ -250,9 +279,22 @@ export function VaultLockScreen() {
                 Unlock with Biometric
               </Button>
             )}
-            <Button variant="ghost" className="w-full" onClick={signOut}>
-              Sign Out
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="ghost"
+                className="flex-1 text-xs"
+                onClick={() => {
+                  setShowRecovery(true);
+                  setError("");
+                }}
+              >
+                <KeyRound className="mr-1 h-3 w-3" />
+                Forgot Password?
+              </Button>
+              <Button variant="ghost" className="flex-1 text-xs" onClick={signOut}>
+                Sign Out
+              </Button>
+            </div>
           </form>
         </CardContent>
       </Card>

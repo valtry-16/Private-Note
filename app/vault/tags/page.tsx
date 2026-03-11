@@ -11,6 +11,8 @@ import {
   Key,
   Upload,
   User,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,6 +36,27 @@ interface TagItem {
   color: string;
 }
 
+const typeIcons: Record<string, typeof FileText> = {
+  note: FileText,
+  password: Key,
+  document: Upload,
+  personal: User,
+};
+
+const typeLabels: Record<string, string> = {
+  note: "Note",
+  password: "Password",
+  document: "Document",
+  personal: "Personal Info",
+};
+
+const typeRoutes: Record<string, string> = {
+  note: "notes",
+  password: "passwords",
+  document: "documents",
+  personal: "personal",
+};
+
 const tagColors = [
   "#6366f1", "#ec4899", "#f59e0b", "#10b981", "#3b82f6",
   "#8b5cf6", "#ef4444", "#14b8a6", "#f97316", "#06b6d4",
@@ -51,6 +74,7 @@ export default function TagsPage() {
   const [tagName, setTagName] = useState("");
   const [tagColor, setTagColor] = useState(tagColors[0]);
   const [saving, setSaving] = useState(false);
+  const [expandedTag, setExpandedTag] = useState<string | null>(null);
 
   const loadTags = useCallback(async () => {
     if (!user) return;
@@ -96,6 +120,7 @@ export default function TagsPage() {
   async function handleDelete(tagId: string) {
     await supabase.from("item_tags").delete().eq("tag_id", tagId);
     await supabase.from("tags").delete().eq("id", tagId);
+    if (expandedTag === tagId) setExpandedTag(null);
     loadTags();
   }
 
@@ -106,8 +131,8 @@ export default function TagsPage() {
     setDialogOpen(true);
   }
 
-  function getItemCountForTag(tagName: string) {
-    return items.filter((i) => !i.is_deleted && i.tags.includes(tagName)).length;
+  function getItemsForTag(tagName: string) {
+    return items.filter((i) => !i.is_deleted && i.tags.includes(tagName));
   }
 
   return (
@@ -145,9 +170,10 @@ export default function TagsPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="space-y-3">
           {tags.map((tag) => {
-            const count = getItemCountForTag(tag.name);
+            const tagItems = getItemsForTag(tag.name);
+            const isExpanded = expandedTag === tag.id;
             return (
               <Card key={tag.id} className="transition-shadow hover:shadow-md">
                 <CardContent className="p-4">
@@ -156,11 +182,22 @@ export default function TagsPage() {
                       className="h-4 w-4 shrink-0 rounded-full"
                       style={{ backgroundColor: tag.color }}
                     />
-                    <div className="min-w-0 flex-1">
+                    <div
+                      className="min-w-0 flex-1 cursor-pointer"
+                      onClick={() => setExpandedTag(isExpanded ? null : tag.id)}
+                    >
                       <p className="truncate font-medium">{tag.name}</p>
-                      <p className="text-xs text-muted-foreground">{count} item(s)</p>
+                      <p className="text-xs text-muted-foreground">{tagItems.length} item(s)</p>
                     </div>
                     <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => setExpandedTag(isExpanded ? null : tag.id)}
+                      >
+                        {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      </Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(tag)}>
                         <Edit3 className="h-4 w-4" />
                       </Button>
@@ -174,6 +211,45 @@ export default function TagsPage() {
                       </Button>
                     </div>
                   </div>
+
+                  {/* Expanded: show items in this tag */}
+                  {isExpanded && (
+                    <div className="mt-3 border-t pt-3">
+                      {tagItems.length === 0 ? (
+                        <p className="text-center text-xs text-muted-foreground py-3">
+                          No items with this tag
+                        </p>
+                      ) : (
+                        <div className="space-y-2">
+                          {tagItems.map((item) => {
+                            const Icon = typeIcons[item.type] || FileText;
+                            return (
+                              <a
+                                key={item.id}
+                                href={`/vault/${typeRoutes[item.type]}?id=${item.id}`}
+                                className="flex items-center gap-3 rounded-md p-2 transition-colors hover:bg-accent/50"
+                              >
+                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-primary/10">
+                                  <Icon className="h-4 w-4 text-primary" />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <p className="truncate text-sm font-medium">{item.title}</p>
+                                  {item.preview && (
+                                    <p className="truncate text-xs text-muted-foreground">
+                                      {item.preview}
+                                    </p>
+                                  )}
+                                </div>
+                                <Badge variant="secondary" className="shrink-0 text-[10px]">
+                                  {typeLabels[item.type]}
+                                </Badge>
+                              </a>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             );

@@ -19,6 +19,8 @@ CREATE TABLE IF NOT EXISTS user_profiles (
   totp_enabled BOOLEAN DEFAULT FALSE,
   webauthn_credential_id TEXT,
   webauthn_public_key TEXT,
+  recovery_master TEXT,
+  encrypted_recovery_key TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(user_id)

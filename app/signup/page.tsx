@@ -3,13 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Shield, AlertTriangle, Loader2, Eye, EyeOff } from "lucide-react";
+import { Shield, AlertTriangle, Loader2, Eye, EyeOff, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { createClient } from "@/supabase/client";
-import { generateVerificationToken } from "@/encryption";
+import { generateVerificationToken, generateRecoveryKey, encrypt } from "@/encryption";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -24,6 +24,8 @@ export default function SignupPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showMaster, setShowMaster] = useState(false);
   const [showConfirmMaster, setShowConfirmMaster] = useState(false);
+  const [recoveryKey, setRecoveryKey] = useState("");
+  const [copied, setCopied] = useState(false);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,10 +64,16 @@ export default function SignupPage() {
 
       if (data.user) {
         const encryptedVerification = await generateVerificationToken(masterPassword);
+        const recKey = generateRecoveryKey();
+        const recoveryMaster = await encrypt(masterPassword, recKey);
+        const encryptedRecoveryKey = await encrypt(recKey, masterPassword);
+
         const { error: profileError } = await supabase.from("user_profiles").insert({
           user_id: data.user.id,
           encrypted_verification: encryptedVerification,
           auto_lock_seconds: 60,
+          recovery_master: recoveryMaster,
+          encrypted_recovery_key: encryptedRecoveryKey,
         });
 
         if (profileError) {
@@ -80,20 +88,66 @@ export default function SignupPage() {
           user_agent: navigator.userAgent,
         });
 
-        // If session exists, user is auto-confirmed — go straight to unlock
-        if (data.session) {
-          router.refresh();
-          router.push("/vault/unlock");
-        } else {
-          // Email confirmation required
-          router.push("/login?registered=true");
-        }
+        // Show recovery key before proceeding
+        setRecoveryKey(recKey);
       }
     } catch {
       setError("An unexpected error occurred. Please try again.");
     }
     setLoading(false);
   };
+
+  function handleCopyRecovery() {
+    navigator.clipboard.writeText(recoveryKey);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  function handleContinue() {
+    router.refresh();
+    router.push("/vault/unlock");
+  }
+
+  // Show recovery key after successful signup
+  if (recoveryKey) {
+    return (
+      <div className="flex min-h-screen items-center justify-center px-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-green-500/10">
+              <Shield className="h-6 w-6 text-green-500" />
+            </div>
+            <CardTitle className="text-2xl">Save Your Recovery Key</CardTitle>
+            <CardDescription>
+              This is the <strong>only way</strong> to recover your vault if you forget your master
+              password. Write it down and store it somewhere safe.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="rounded-md border bg-muted/50 p-4">
+              <p className="break-all text-center font-mono text-sm tracking-wider">
+                {recoveryKey}
+              </p>
+            </div>
+            <Button variant="outline" className="w-full" onClick={handleCopyRecovery}>
+              {copied ? (
+                <><Check className="mr-2 h-4 w-4" /> Copied!</>
+              ) : (
+                <><Copy className="mr-2 h-4 w-4" /> Copy Recovery Key</>
+              )}
+            </Button>
+            <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-xs text-destructive">
+              <strong>Warning:</strong> This key will NOT be shown again. If you lose it and forget 
+              your master password, your encrypted data cannot be recovered.
+            </div>
+            <Button className="w-full" onClick={handleContinue}>
+              I&apos;ve Saved My Recovery Key — Continue
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4">
