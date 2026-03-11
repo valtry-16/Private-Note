@@ -16,6 +16,7 @@ import {
   EyeOff,
   Eye,
   X,
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -68,6 +69,7 @@ export default function DocumentsPage() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewType, setPreviewType] = useState<string>("");
   const [previewName, setPreviewName] = useState<string>("");
+  const [previewError, setPreviewError] = useState<string>("");
   const [previewing, setPreviewing] = useState<string | null>(null);
 
   async function handleUpload() {
@@ -156,8 +158,10 @@ export default function DocumentsPage() {
         );
         downloadBlob = new Blob([await decryptedFile.arrayBuffer()], { type: decryptedFile.type });
       } else {
-        // Legacy files without encrypted metadata — serve raw blob
-        downloadBlob = fileData;
+        // Legacy files — encryption metadata was lost, cannot decrypt
+        alert("This file was uploaded before decryption metadata was stored. Please delete and re-upload the file.");
+        setDownloading(null);
+        return;
       }
 
       const url = URL.createObjectURL(downloadBlob);
@@ -178,6 +182,7 @@ export default function DocumentsPage() {
   async function handlePreview(itemId: string) {
     if (!masterPassword) return;
     setPreviewing(itemId);
+    setPreviewError("");
 
     try {
       const { data: item } = await supabase
@@ -201,19 +206,21 @@ export default function DocumentsPage() {
 
       if (previewUrl) URL.revokeObjectURL(previewUrl);
 
-      // Decrypt the file if encrypted metadata is available
-      let previewBlob: Blob;
-      if (metadata.encrypted_file_metadata) {
-        const decryptedFile = await decryptFile(
-          fileData,
-          metadata.encrypted_file_metadata,
-          masterPassword
-        );
-        previewBlob = new Blob([await decryptedFile.arrayBuffer()], { type: decryptedFile.type });
-      } else {
-        // Legacy files without encrypted metadata — try raw blob
-        previewBlob = new Blob([fileData], { type: docInfo.fileType });
+      if (!metadata.encrypted_file_metadata) {
+        // Legacy file — encryption metadata was lost, cannot decrypt
+        setPreviewName(docInfo.fileName);
+        setPreviewType(docInfo.fileType);
+        setPreviewError("This file was uploaded before decryption metadata was stored. Please delete and re-upload the file.");
+        setPreviewing(null);
+        return;
       }
+
+      const decryptedFile = await decryptFile(
+        fileData,
+        metadata.encrypted_file_metadata,
+        masterPassword
+      );
+      const previewBlob = new Blob([await decryptedFile.arrayBuffer()], { type: decryptedFile.type });
 
       const url = URL.createObjectURL(previewBlob);
       setPreviewUrl(url);
@@ -221,6 +228,7 @@ export default function DocumentsPage() {
       setPreviewName(docInfo.fileName);
     } catch (err) {
       console.error("Preview failed:", err);
+      setPreviewError("Failed to preview file.");
     }
 
     setPreviewing(null);
@@ -231,6 +239,7 @@ export default function DocumentsPage() {
     setPreviewUrl(null);
     setPreviewType("");
     setPreviewName("");
+    setPreviewError("");
   }
 
   async function handleDelete(itemId: string) {
@@ -425,43 +434,52 @@ export default function DocumentsPage() {
       </Dialog>
 
       {/* Preview Dialog */}
-      <Dialog open={!!previewUrl} onOpenChange={(open) => !open && closePreview()}>
+      <Dialog open={!!previewUrl || !!previewError} onOpenChange={(open) => !open && closePreview()}>
         <DialogContent className="max-w-4xl max-h-[90vh]">
           <DialogHeader>
             <DialogTitle className="truncate">{previewName}</DialogTitle>
           </DialogHeader>
           <div className="flex items-center justify-center overflow-auto" style={{ maxHeight: "70vh" }}>
-            {previewType.startsWith("image/") && previewUrl && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={previewUrl}
-                alt={previewName}
-                className="max-h-full max-w-full rounded object-contain"
-              />
+            {previewError ? (
+              <div className="py-12 text-center">
+                <AlertTriangle className="mx-auto mb-3 h-12 w-12 text-yellow-500 opacity-70" />
+                <p className="text-sm text-muted-foreground">{previewError}</p>
+              </div>
+            ) : (
+              <>
+                {previewType.startsWith("image/") && previewUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={previewUrl}
+                    alt={previewName}
+                    className="max-h-full max-w-full rounded object-contain"
+                  />
+                )}
+                {previewType === "application/pdf" && previewUrl && (
+                  <iframe
+                    src={previewUrl}
+                    title={previewName}
+                    className="h-[70vh] w-full rounded border-0"
+                  />
+                )}
+                {previewType.startsWith("text/") && previewUrl && (
+                  <iframe
+                    src={previewUrl}
+                    title={previewName}
+                    className="h-[70vh] w-full rounded border bg-white p-4"
+                  />
+                )}
+                {!previewType.startsWith("image/") &&
+                  previewType !== "application/pdf" &&
+                  !previewType.startsWith("text/") && (
+                    <div className="py-12 text-center text-muted-foreground">
+                      <File className="mx-auto mb-3 h-12 w-12 opacity-50" />
+                      <p>Preview not available for this file type</p>
+                      <p className="text-xs mt-1">{previewType}</p>
+                    </div>
+                  )}
+              </>
             )}
-            {previewType === "application/pdf" && previewUrl && (
-              <iframe
-                src={previewUrl}
-                title={previewName}
-                className="h-[70vh] w-full rounded border-0"
-              />
-            )}
-            {previewType.startsWith("text/") && previewUrl && (
-              <iframe
-                src={previewUrl}
-                title={previewName}
-                className="h-[70vh] w-full rounded border bg-white p-4"
-              />
-            )}
-            {!previewType.startsWith("image/") &&
-              previewType !== "application/pdf" &&
-              !previewType.startsWith("text/") && (
-                <div className="py-12 text-center text-muted-foreground">
-                  <File className="mx-auto mb-3 h-12 w-12 opacity-50" />
-                  <p>Preview not available for this file type</p>
-                  <p className="text-xs mt-1">{previewType}</p>
-                </div>
-              )}
           </div>
         </DialogContent>
       </Dialog>

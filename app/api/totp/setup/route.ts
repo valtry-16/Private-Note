@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { TOTP, generateSecret, generateURI, verifySync } from "otplib";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -8,14 +7,16 @@ const supabaseAdmin = createClient(
 );
 
 export async function POST(req: NextRequest) {
+  try {
   const { userId, action, token } = await req.json();
   if (!userId) {
     return NextResponse.json({ error: "Missing userId" }, { status: 400 });
   }
 
   if (action === "generate") {
-    const secret = generateSecret();
-    const otpauthUrl = generateURI({
+    const otplib = await import("otplib");
+    const secret = otplib.generateSecret();
+    const otpauthUrl = otplib.generateURI({
       issuer: "ZeroVault",
       label: userId,
       secret,
@@ -46,7 +47,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No TOTP secret found" }, { status: 400 });
     }
 
-    const result = verifySync({ secret: profile.totp_secret, token, algorithm: "sha1", digits: 6, period: 30 });
+    const otplib = await import("otplib");
+    const result = otplib.verifySync({ secret: profile.totp_secret, token, algorithm: "sha1", digits: 6, period: 30 });
     if (result) {
       await supabaseAdmin
         .from("user_profiles")
@@ -71,7 +73,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No TOTP secret found" }, { status: 400 });
     }
 
-    const result = verifySync({ secret: profile.totp_secret, token, algorithm: "sha1", digits: 6, period: 30 });
+    const otplib2 = await import("otplib");
+    const result = otplib2.verifySync({ secret: profile.totp_secret, token, algorithm: "sha1", digits: 6, period: 30 });
     if (result) {
       await supabaseAdmin
         .from("user_profiles")
@@ -83,4 +86,11 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({ error: "Invalid action" }, { status: 400 });
+  } catch (err: any) {
+    console.error("TOTP setup error:", err?.message || err);
+    return NextResponse.json(
+      { error: err?.message || "Internal server error" },
+      { status: 500 }
+    );
+  }
 }

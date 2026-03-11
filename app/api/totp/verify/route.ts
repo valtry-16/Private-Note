@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { verifySync } from "otplib";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -8,6 +7,7 @@ const supabaseAdmin = createClient(
 );
 
 export async function POST(req: NextRequest) {
+  try {
   const { userId, token, action } = await req.json();
   if (!userId) {
     return NextResponse.json({ error: "Missing userId" }, { status: 400 });
@@ -32,6 +32,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ enabled: false, error: "2FA not enabled" });
   }
 
-  const isValid = verifySync({ secret: profile.totp_secret, token, algorithm: "sha1", digits: 6, period: 30 });
+  const otplib = await import("otplib");
+  const isValid = otplib.verifySync({ secret: profile.totp_secret, token, algorithm: "sha1", digits: 6, period: 30 });
   return NextResponse.json({ valid: isValid });
+  } catch (err: any) {
+    console.error("TOTP verify error:", err?.message || err);
+    return NextResponse.json(
+      { error: err?.message || "Internal server error" },
+      { status: 500 }
+    );
+  }
 }
