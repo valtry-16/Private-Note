@@ -22,6 +22,12 @@ export default function LandingPage() {
             <span className="text-xl font-bold">ZeroVault</span>
           </div>
           <div className="flex items-center gap-3">
+            <Link href="/faq">
+              <Button variant="ghost">FAQ</Button>
+            </Link>
+            <Link href="/privacy">
+              <Button variant="ghost">Privacy</Button>
+            </Link>
             <Link href="/login">
               <Button variant="ghost">Log In</Button>
             </Link>
@@ -177,12 +183,16 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer className="border-t py-8">
-        <div className="container mx-auto flex items-center justify-between px-4 text-sm text-muted-foreground">
+        <div className="container mx-auto flex flex-col items-center justify-between gap-4 px-4 text-sm text-muted-foreground sm:flex-row">
           <div className="flex items-center gap-2">
             <Shield className="h-4 w-4" />
             <span>ZeroVault</span>
           </div>
           <p>Zero-knowledge encrypted vault. Your data, your keys, your privacy.</p>
+          <div className="flex items-center gap-4">
+            <Link href="/privacy" className="hover:text-foreground">Privacy Policy</Link>
+            <Link href="/faq" className="hover:text-foreground">FAQ</Link>
+          </div>
         </div>
       </footer>
     </div>

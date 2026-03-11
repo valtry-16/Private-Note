@@ -11,7 +11,7 @@ import { useVault } from "@/hooks/use-vault";
 
 export default function UnlockPage() {
   const router = useRouter();
-  const { isAuthenticated, unlockVault, signOut, failedAttempts, isLocked } = useVault();
+  const { isAuthenticated, isVaultUnlocked, unlockVault, signOut, failedAttempts, isLocked } = useVault();
   const [masterPassword, setMasterPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -19,6 +19,11 @@ export default function UnlockPage() {
 
   if (!isAuthenticated) {
     router.push("/login");
+    return null;
+  }
+
+  if (isVaultUnlocked) {
+    router.push("/vault");
     return null;
   }
 

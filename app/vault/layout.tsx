@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { Menu } from "lucide-react";
 import { useVault } from "@/hooks/use-vault";
 import { useAutoLock } from "@/hooks/use-auto-lock";
 import { Sidebar } from "@/components/vault/sidebar";
@@ -26,10 +27,23 @@ export default function VaultLayout({ children }: { children: React.ReactNode })
     return <VaultLockScreen />;
   }
 
+  const [mobileOpen, setMobileOpen] = useState(false);
+
   return (
     <div className="flex h-screen overflow-hidden bg-background">
-      <Sidebar />
-      <main className="flex-1 overflow-auto pt-14 md:pt-0">{children}</main>
+      <Sidebar mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} />
+      <main className="flex-1 overflow-auto">
+        <div className="flex h-14 items-center px-3 md:hidden">
+          <button
+            onClick={() => setMobileOpen(true)}
+            className="rounded-md bg-card p-2 shadow-md"
+            aria-label="Open menu"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+        </div>
+        {children}
+      </main>
     </div>
   );
 }

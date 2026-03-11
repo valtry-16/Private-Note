@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Shield, AlertTriangle, Loader2, Eye, EyeOff, Copy, Check } from "lucide-react";
+import { Shield, AlertTriangle, Loader2, Eye, EyeOff, Copy, Check, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -103,6 +103,17 @@ export default function SignupPage() {
     setTimeout(() => setCopied(false), 2000);
   }
 
+  function handleDownloadRecovery() {
+    const content = `ZeroVault Recovery Key\n${"=".repeat(30)}\n\n${recoveryKey}\n\nStore this key in a safe place. It is the ONLY way to recover your vault if you forget your master password.\nGenerated: ${new Date().toISOString()}`;
+    const blob = new Blob([content], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "zerovault-recovery-key.txt";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   function handleContinue() {
     router.refresh();
     router.push("/vault/unlock");
@@ -135,6 +146,9 @@ export default function SignupPage() {
               ) : (
                 <><Copy className="mr-2 h-4 w-4" /> Copy Recovery Key</>
               )}
+            </Button>
+            <Button variant="outline" className="w-full" onClick={handleDownloadRecovery}>
+              <Download className="mr-2 h-4 w-4" /> Download Recovery Key
             </Button>
             <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-xs text-destructive">
               <strong>Warning:</strong> This key will NOT be shown again. If you lose it and forget 
