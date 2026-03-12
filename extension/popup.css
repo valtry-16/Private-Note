@@ -65,6 +65,34 @@ input[type="text"],
   transition: border-color 0.2s;
 }
 
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-wrapper input {
+  padding-right: 40px;
+}
+
+.eye-toggle {
+  position: absolute;
+  right: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.eye-toggle:hover {
+  opacity: 1;
+}
+
 input:focus {
   border-color: #3b82f6;
 }

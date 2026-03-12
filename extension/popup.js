@@ -28,6 +28,17 @@ const saveNo = document.getElementById("save-no");
 
 // ─── Initialize ───
 document.addEventListener("DOMContentLoaded", async () => {
+  // Eye toggle for password fields
+  document.querySelectorAll(".eye-toggle").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const input = document.getElementById(btn.dataset.target);
+      const isHidden = input.type === "password";
+      input.type = isHidden ? "text" : "password";
+      btn.querySelector(".eye-open").classList.toggle("hidden", isHidden);
+      btn.querySelector(".eye-closed").classList.toggle("hidden", !isHidden);
+    });
+  });
+
   const stored = await chrome.storage.session.get(["session", "masterPassword"]);
   if (stored.session && stored.masterPassword) {
     session = stored.session;
@@ -64,11 +75,12 @@ loginForm.addEventListener("submit", async (e) => {
       body: JSON.stringify({ email, password }),
     });
 
+    const authData = await authRes.json();
+
     if (!authRes.ok) {
-      throw new Error("Invalid email or password");
+      throw new Error(authData?.error_description || authData?.msg || "Invalid email or password");
     }
 
-    const authData = await authRes.json();
     session = authData;
 
     // Verify master password
