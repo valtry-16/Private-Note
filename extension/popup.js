@@ -71,6 +71,7 @@ loginForm.addEventListener("submit", async (e) => {
       headers: {
         "Content-Type": "application/json",
         "apikey": SUPABASE_ANON_KEY,
+        "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
       },
       body: JSON.stringify({ email, password }),
     });
@@ -107,7 +108,8 @@ loginForm.addEventListener("submit", async (e) => {
     showVault();
     loadPasswords();
   } catch (err) {
-    loginError.textContent = err.message;
+    console.error("ZeroVault login error:", err);
+    loginError.textContent = err.message || "Login failed. Check your credentials.";
     loginError.classList.remove("hidden");
   }
 
