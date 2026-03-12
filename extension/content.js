@@ -1,13 +1,14 @@
 /**
  * ZeroVault Content Script
- * Detects login forms, offers autofill, and captures submitted credentials for saving.
+ * Detects login forms, offers autofill, captures credentials, and auto-fills
+ * passwords when the user types a known username/email.
  */
 
 (function () {
   "use strict";
 
-  let hasDetectedForm = false;
-  let autofillBadge = null;
+  const USER_FIELD_SELECTOR =
+    'input[type="email"], input[type="text"][name*="user"], input[type="text"][name*="email"], input[type="text"][name*="login"], input[autocomplete="username"], input[autocomplete="email"]';
 
   // ─── Detect Login Forms ───
   function detectLoginForms() {
@@ -16,25 +17,24 @@
     passwordFields.forEach((passField) => {
       passField.setAttribute("data-zv-detected", "true");
 
-      // Find the form or closest container
       const form = passField.closest("form");
 
-      // Find associated username/email field
       let userField = null;
       if (form) {
-        userField = form.querySelector(
-          'input[type="email"], input[type="text"][name*="user"], input[type="text"][name*="email"], input[type="text"][name*="login"], input[autocomplete="username"], input[autocomplete="email"]'
-        );
+        userField = form.querySelector(USER_FIELD_SELECTOR);
       } else {
-        // Look for nearby text inputs
         const parent = passField.parentElement?.parentElement || document.body;
-        userField = parent.querySelector(
-          'input[type="email"], input[type="text"][name*="user"], input[type="text"][name*="email"]'
-        );
+        userField = parent.querySelector(USER_FIELD_SELECTOR);
       }
 
       // Add autofill badge near password field
       addAutofillBadge(passField);
+
+      // Attach smart autofill: when user leaves the username field, look up vault
+      if (userField && !userField.hasAttribute("data-zv-smart")) {
+        userField.setAttribute("data-zv-smart", "true");
+        attachSmartAutofill(userField, passField);
+      }
 
       // Listen for form submission to capture credentials
       if (form && !form.hasAttribute("data-zv-listener")) {
@@ -44,13 +44,66 @@
         });
       }
 
-      // Also capture on Enter key in password field
       passField.addEventListener("keydown", (e) => {
         if (e.key === "Enter") {
           captureCredentials(userField, passField);
         }
       });
     });
+  }
+
+  // ─── Smart Autofill: username blur → lookup → fill password ───
+  function attachSmartAutofill(userField, passField) {
+    let debounceTimer = null;
+
+    function doLookup() {
+      const username = userField.value.trim();
+      if (!username || username.length < 3) return;
+
+      const domain = window.location.hostname.replace("www.", "");
+
+      chrome.runtime.sendMessage(
+        { action: "lookupUsername", username, domain },
+        (response) => {
+          if (chrome.runtime.lastError) return;
+          if (response && response.password) {
+            // Fill the password field
+            passField.value = response.password;
+            passField.dispatchEvent(new Event("input", { bubbles: true }));
+            passField.dispatchEvent(new Event("change", { bubbles: true }));
+
+            // Show a subtle indicator
+            showAutofillHint(passField);
+          }
+        }
+      );
+    }
+
+    // Trigger on blur (user tabs or clicks away from username field)
+    userField.addEventListener("blur", () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(doLookup, 200);
+    });
+
+    // Also trigger on Enter in username field
+    userField.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === "Tab") {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(doLookup, 100);
+      }
+    });
+  }
+
+  // ─── Show a brief green flash on the password field after autofill ───
+  function showAutofillHint(field) {
+    const origBorder = field.style.borderColor;
+    const origShadow = field.style.boxShadow;
+    field.style.borderColor = "#22c55e";
+    field.style.boxShadow = "0 0 0 2px rgba(34, 197, 94, 0.3)";
+    setTimeout(() => {
+      field.style.borderColor = origBorder;
+      field.style.boxShadow = origShadow;
+    }, 1500);
   }
 
   // ─── Autofill Badge ───

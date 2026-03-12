@@ -169,6 +169,17 @@ async function loadPasswords() {
       }
     }
 
+    // Cache decrypted passwords for content script smart autofill
+    await chrome.storage.session.set({
+      decryptedPasswords: passwords.map((p) => ({
+        id: p.id,
+        title: p.title || "",
+        website: p.website || "",
+        username: p.username || "",
+        password: p.password || "",
+      })),
+    });
+
     renderPasswords();
     matchCurrentSite();
   } catch {

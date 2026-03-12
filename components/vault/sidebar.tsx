@@ -49,6 +49,7 @@ const navItems = [
   { href: "/vault/tags", icon: Tag, label: "Tags" },
   { href: "/vault/health", icon: Activity, label: "Password Health" },
   { href: "/vault/hidden", icon: EyeOff, label: "Hidden Vault" },
+  { href: "/vault/import-export", icon: RefreshCw, label: "Import & Export" },
   { href: "/vault/trash", icon: Trash2, label: "Trash" },
   { href: "/vault/settings", icon: Settings, label: "Settings" },
 ];
