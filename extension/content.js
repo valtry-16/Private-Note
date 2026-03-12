@@ -60,23 +60,22 @@
       const username = userField.value.trim();
       if (!username || username.length < 3) return;
 
-      const domain = window.location.hostname.replace("www.", "");
-
-      chrome.runtime.sendMessage(
-        { action: "lookupUsername", username, domain },
-        (response) => {
-          if (chrome.runtime.lastError) return;
-          if (response && response.password) {
-            // Fill the password field
-            passField.value = response.password;
-            passField.dispatchEvent(new Event("input", { bubbles: true }));
-            passField.dispatchEvent(new Event("change", { bubbles: true }));
-
-            // Show a subtle indicator
-            showAutofillHint(passField);
+      try {
+        chrome.runtime.sendMessage(
+          { action: "lookupUsername", username },
+          (response) => {
+            if (chrome.runtime.lastError) return;
+            if (response && response.password) {
+              passField.value = response.password;
+              passField.dispatchEvent(new Event("input", { bubbles: true }));
+              passField.dispatchEvent(new Event("change", { bubbles: true }));
+              showAutofillHint(passField);
+            }
           }
-        }
-      );
+        );
+      } catch {
+        // Extension context invalidated
+      }
     }
 
     // Trigger on blur (user tabs or clicks away from username field)
@@ -145,8 +144,11 @@
       badge.addEventListener("click", (e) => {
         e.preventDefault();
         e.stopPropagation();
-        // Send message to background to open popup
-        chrome.runtime.sendMessage({ action: "openPopup" });
+        try {
+          chrome.runtime.sendMessage({ action: "openPopup" });
+        } catch {
+          // Extension context invalidated
+        }
       });
     }
   }
@@ -172,10 +174,14 @@
     });
 
     // Notify background script
-    chrome.runtime.sendMessage({
-      action: "credentialsCaptured",
-      data: { domain, username },
-    });
+    try {
+      chrome.runtime.sendMessage({
+        action: "credentialsCaptured",
+        data: { domain, username },
+      });
+    } catch {
+      // Extension context invalidated
+    }
   }
 
   // ─── Listen for Autofill Messages from Background/Popup ───

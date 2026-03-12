@@ -39,7 +39,7 @@ export default function ImportExportPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [exporting, setExporting] = useState(false);
-  const [exportFormat, setExportFormat] = useState<"json" | "csv">("json");
+  const [exportFormat, setExportFormat] = useState<"zvault" | "csv">("zvault");
   const [importing, setImporting] = useState(false);
   const [importFormat, setImportFormat] = useState<ImportFormat>("zerovault");
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
@@ -89,10 +89,23 @@ export default function ImportExportPage() {
       const blob = new Blob([csvRows.join("\n")], { type: "text/csv" });
       downloadBlob(blob, `zerovault-passwords-${dateStr()}.csv`);
     } else {
-      const blob = new Blob([JSON.stringify(decryptedItems, null, 2)], {
+      // .zvault format — human-readable, re-importable
+      const zvaultData = {
+        format: "zerovault-export",
+        version: "1.0",
+        exported_at: new Date().toISOString(),
+        item_count: decryptedItems.length,
+        items: decryptedItems.map((item) => ({
+          type: item.type,
+          is_favorite: item.is_favorite || false,
+          created_at: item.created_at,
+          data: item.data,
+        })),
+      };
+      const blob = new Blob([JSON.stringify(zvaultData, null, 2)], {
         type: "application/json",
       });
-      downloadBlob(blob, `zerovault-export-${dateStr()}.json`);
+      downloadBlob(blob, `zerovault-export-${dateStr()}.zvault`);
     }
 
     setExporting(false);
@@ -126,7 +139,15 @@ export default function ImportExportPage() {
       let items: { type: string; data: any }[] = [];
 
       if (importFormat === "zerovault") {
-        items = JSON.parse(text);
+        const parsed = JSON.parse(text);
+        // Support both .zvault wrapper format and raw array
+        if (parsed.format === "zerovault-export" && Array.isArray(parsed.items)) {
+          items = parsed.items;
+        } else if (Array.isArray(parsed)) {
+          items = parsed;
+        } else {
+          throw new Error("Invalid ZeroVault format");
+        }
       } else if (importFormat === "bitwarden") {
         items = parseBitwardenExport(text);
       } else if (importFormat === "csv") {
@@ -287,7 +308,7 @@ export default function ImportExportPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="json">JSON (all items)</SelectItem>
+                  <SelectItem value="zvault">ZeroVault (.zvault)</SelectItem>
                   <SelectItem value="csv">CSV (passwords only)</SelectItem>
                 </SelectContent>
               </Select>
@@ -325,7 +346,7 @@ export default function ImportExportPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="zerovault">ZeroVault JSON</SelectItem>
+                  <SelectItem value="zerovault">ZeroVault (.zvault / .json)</SelectItem>
                   <SelectItem value="bitwarden">Bitwarden JSON</SelectItem>
                   <SelectItem value="csv">CSV (name, url, username, password, notes)</SelectItem>
                 </SelectContent>
@@ -339,14 +360,13 @@ export default function ImportExportPage() {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept=".json,.csv,.txt"
+                accept=".zvault,.json,.csv,.txt"
                 className="hidden"
                 onChange={handleImport}
               />
               <Button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={importing}
-                variant="outline"
                 className="w-full"
               >
                 {importing ? (

@@ -18,7 +18,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   // Smart autofill: look up username in cached decrypted passwords
   if (message.action === "lookupUsername") {
-    const { username, domain } = message;
+    const { username } = message;
     chrome.storage.session.get("decryptedPasswords", (result) => {
       const passwords = result.decryptedPasswords || [];
       if (passwords.length === 0) {
@@ -28,26 +28,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
       const input = (username || "").toLowerCase();
 
-      // Priority 1: match both username AND domain
+      // Exact username/email match
       let match = passwords.find((p) => {
-        const pUser = (p.username || "").toLowerCase();
-        const pDomain = extractDomain(p.website || "");
-        return pUser === input && domain.includes(pDomain);
+        return (p.username || "").toLowerCase() === input;
       });
 
-      // Priority 2: match username only
-      if (!match) {
-        match = passwords.find((p) => {
-          return (p.username || "").toLowerCase() === input;
-        });
-      }
-
-      // Priority 3: partial username match on same domain
+      // Partial match (input contains stored username or vice versa)
       if (!match) {
         match = passwords.find((p) => {
           const pUser = (p.username || "").toLowerCase();
-          const pDomain = extractDomain(p.website || "");
-          return pUser && input.includes(pUser) && domain.includes(pDomain);
+          return pUser && (input.includes(pUser) || pUser.includes(input));
         });
       }
 
@@ -58,7 +48,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
     });
 
-    // Return true to indicate we'll call sendResponse asynchronously
     return true;
   }
 });
