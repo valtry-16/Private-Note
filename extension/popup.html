@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZeroVault</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Login Screen -->
+    <div id="login-screen" class="screen active">
+      <div class="logo">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
+          <path d="M12 2L3 7v6c0 5.25 3.82 10.16 9 11.28C17.18 23.16 21 18.25 21 13V7l-9-5z" stroke="#3b82f6" stroke-width="1.5" fill="#3b82f6" fill-opacity="0.1"/>
+          <rect x="9" y="10" width="6" height="7" rx="1" fill="#3b82f6" fill-opacity="0.3" stroke="#3b82f6" stroke-width="1.2"/>
+          <path d="M10 10V8a2 2 0 0 1 4 0v2" stroke="#3b82f6" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+          <circle cx="12" cy="13.5" r="1" fill="#3b82f6"/>
+        </svg>
+        <h1>ZeroVault</h1>
+      </div>
+      <p class="subtitle">Unlock your encrypted vault</p>
+      <form id="login-form">
+        <input type="email" id="email" placeholder="Email" required autocomplete="email">
+        <input type="password" id="password" placeholder="Account Password" required autocomplete="current-password">
+        <input type="password" id="master-password" placeholder="Master Password" required autocomplete="off">
+        <button type="submit" id="login-btn">
+          <span class="btn-text">Unlock Vault</span>
+          <span class="btn-loader hidden">⏳</span>
+        </button>
+      </form>
+      <p id="login-error" class="error hidden"></p>
+      <a href="https://zero-vault-storage.vercel.app" target="_blank" class="link">Open ZeroVault Web</a>
+    </div>
+
+    <!-- Vault Screen -->
+    <div id="vault-screen" class="screen">
+      <div class="header">
+        <div class="header-left">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <path d="M12 2L3 7v6c0 5.25 3.82 10.16 9 11.28C17.18 23.16 21 18.25 21 13V7l-9-5z" stroke="#3b82f6" stroke-width="1.5" fill="#3b82f6" fill-opacity="0.1"/>
+            <rect x="9" y="10" width="6" height="7" rx="1" fill="#3b82f6" fill-opacity="0.3" stroke="#3b82f6" stroke-width="1.2"/>
+            <path d="M10 10V8a2 2 0 0 1 4 0v2" stroke="#3b82f6" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+            <circle cx="12" cy="13.5" r="1" fill="#3b82f6"/>
+          </svg>
+          <span class="header-title">ZeroVault</span>
+        </div>
+        <div class="header-right">
+          <button id="lock-btn" title="Lock Vault">🔒</button>
+        </div>
+      </div>
+
+      <div class="search-box">
+        <input type="text" id="search" placeholder="Search passwords...">
+      </div>
+
+      <!-- Current Site Match -->
+      <div id="site-match" class="section hidden">
+        <h3>🌐 Matches for this site</h3>
+        <div id="site-matches-list"></div>
+      </div>
+
+      <!-- All Passwords -->
+      <div class="section">
+        <h3>🔑 All Passwords</h3>
+        <div id="password-list">
+          <p class="empty">Loading...</p>
+        </div>
+      </div>
+
+      <!-- Save Prompt Banner -->
+      <div id="save-banner" class="hidden">
+        <p>Save detected credentials?</p>
+        <div class="banner-actions">
+          <button id="save-yes" class="btn-primary">Save</button>
+          <button id="save-no" class="btn-outline">Dismiss</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

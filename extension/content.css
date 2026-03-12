@@ -1,0 +1,10 @@
+/* ZeroVault Content Script Styles */
+
+.zv-autofill-badge {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.zv-autofill-badge:hover {
+  transform: translateY(-50%) scale(1.1);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}

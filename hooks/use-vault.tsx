@@ -72,11 +72,12 @@ export function VaultProvider({ children }: { children: ReactNode }) {
         .eq("user_id", user.id)
         .single();
       setHiddenVaultHash(fullProfile?.hidden_vault_hash ?? null);
-      await supabase.from("security_logs").insert({
-        user_id: user.id,
-        event_type: "vault_unlock",
-        user_agent: navigator.userAgent,
-      });
+      // Log via API route to capture server-side IP
+      fetch("/api/log", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id, eventType: "vault_unlock" }),
+      }).catch(() => {});
       await supabase
         .from("user_profiles")
         .update({ last_active_at: new Date().toISOString() })
@@ -126,13 +127,19 @@ export function VaultProvider({ children }: { children: ReactNode }) {
       } else {
         const newAttempts = failedAttempts + 1;
         setFailedAttempts(newAttempts);
+        // Log each failed attempt
+        fetch("/api/log", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: user.id, eventType: "failed_unlock" }),
+        }).catch(() => {});
         if (newAttempts >= MAX_FAILED_ATTEMPTS) {
           setLockedUntil(Date.now() + LOCKOUT_DURATION_MS);
-          await supabase.from("security_logs").insert({
-            user_id: user.id,
-            event_type: "vault_lockout",
-            user_agent: navigator.userAgent,
-          });
+          fetch("/api/log", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ userId: user.id, eventType: "vault_lockout" }),
+          }).catch(() => {});
         }
         return false;
       }

@@ -17,6 +17,11 @@ import {
   Wallet,
   Loader2,
   X,
+  Wifi,
+  KeyRound,
+  FileText,
+  Smartphone,
+  Shield,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,29 +45,114 @@ import { encrypt, decrypt } from "@/encryption";
 import { ItemActionsMenu } from "@/components/vault/item-actions-menu";
 import type { DecryptedPersonalInfo } from "@/types";
 
-const categories = [
-  { value: "passport", label: "Passport", icon: Fingerprint },
-  { value: "bank", label: "Bank Account", icon: Landmark },
-  { value: "id", label: "ID Card", icon: CreditCard },
-  { value: "crypto", label: "Crypto Wallet", icon: Wallet },
-  { value: "other", label: "Other", icon: User },
-];
-
-const categoryIcons: Record<string, any> = {
-  passport: Fingerprint,
-  bank: Landmark,
-  id: CreditCard,
-  crypto: Wallet,
-  other: User,
+const templates: Record<string, { label: string; icon: any; color: string; fields: { label: string; value: string }[] }> = {
+  personal_id: {
+    label: "Personal ID",
+    icon: Fingerprint,
+    color: "bg-blue-500/10 text-blue-500",
+    fields: [
+      { label: "ID Type", value: "" },
+      { label: "Full Name", value: "" },
+      { label: "ID Number", value: "" },
+      { label: "Date of Birth", value: "" },
+      { label: "Issue Date", value: "" },
+      { label: "Expiry Date", value: "" },
+      { label: "Issuing Authority", value: "" },
+      { label: "Nationality", value: "" },
+    ],
+  },
+  bank_card: {
+    label: "Bank Card",
+    icon: CreditCard,
+    color: "bg-emerald-500/10 text-emerald-500",
+    fields: [
+      { label: "Card Name", value: "" },
+      { label: "Card Number", value: "" },
+      { label: "Cardholder Name", value: "" },
+      { label: "Expiry Date (MM/YY)", value: "" },
+      { label: "CVV", value: "" },
+      { label: "PIN", value: "" },
+      { label: "Bank Name", value: "" },
+      { label: "Billing Address", value: "" },
+    ],
+  },
+  bank_account: {
+    label: "Bank Account",
+    icon: Landmark,
+    color: "bg-green-500/10 text-green-500",
+    fields: [
+      { label: "Bank Name", value: "" },
+      { label: "Account Holder", value: "" },
+      { label: "Account Number", value: "" },
+      { label: "Routing Number", value: "" },
+      { label: "SWIFT/BIC", value: "" },
+      { label: "IBAN", value: "" },
+      { label: "Account Type", value: "" },
+      { label: "Branch", value: "" },
+    ],
+  },
+  crypto_wallet: {
+    label: "Crypto Wallet",
+    icon: Wallet,
+    color: "bg-purple-500/10 text-purple-500",
+    fields: [
+      { label: "Wallet Name", value: "" },
+      { label: "Cryptocurrency", value: "" },
+      { label: "Wallet Address", value: "" },
+      { label: "Private Key", value: "" },
+      { label: "Seed Phrase", value: "" },
+      { label: "Exchange", value: "" },
+      { label: "Network", value: "" },
+    ],
+  },
+  wifi_password: {
+    label: "WiFi Password",
+    icon: Wifi,
+    color: "bg-cyan-500/10 text-cyan-500",
+    fields: [
+      { label: "Network Name (SSID)", value: "" },
+      { label: "Password", value: "" },
+      { label: "Security Type", value: "" },
+      { label: "Router IP", value: "" },
+      { label: "Admin Username", value: "" },
+      { label: "Admin Password", value: "" },
+    ],
+  },
+  api_key: {
+    label: "API Key",
+    icon: KeyRound,
+    color: "bg-orange-500/10 text-orange-500",
+    fields: [
+      { label: "Service Name", value: "" },
+      { label: "API Key", value: "" },
+      { label: "API Secret", value: "" },
+      { label: "Base URL", value: "" },
+      { label: "Environment", value: "" },
+      { label: "Rate Limit", value: "" },
+    ],
+  },
+  document: {
+    label: "Document",
+    icon: FileText,
+    color: "bg-amber-500/10 text-amber-500",
+    fields: [
+      { label: "Document Type", value: "" },
+      { label: "Document Number", value: "" },
+      { label: "Issued By", value: "" },
+      { label: "Issue Date", value: "" },
+      { label: "Expiry Date", value: "" },
+      { label: "Holder Name", value: "" },
+    ],
+  },
+  other: {
+    label: "Other",
+    icon: Shield,
+    color: "bg-gray-500/10 text-gray-500",
+    fields: [{ label: "", value: "" }],
+  },
 };
 
-const categoryColors: Record<string, string> = {
-  passport: "bg-blue-500/10 text-blue-500",
-  bank: "bg-green-500/10 text-green-500",
-  id: "bg-orange-500/10 text-orange-500",
-  crypto: "bg-purple-500/10 text-purple-500",
-  other: "bg-gray-500/10 text-gray-500",
-};
+const templateList = Object.entries(templates).map(([key, val]) => ({ value: key, ...val }));
 
 export default function PersonalInfoPage() {
   const searchParams = useSearchParams();
@@ -76,6 +166,7 @@ export default function PersonalInfoPage() {
 
   const [dialogOpen, setDialogOpen] = useState(isNew);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [showTemplateSelect, setShowTemplateSelect] = useState(false);
   const [formData, setFormData] = useState<DecryptedPersonalInfo>({
     title: "",
     category: "other",
@@ -198,9 +289,24 @@ export default function PersonalInfoPage() {
 
   function resetForm() {
     setDialogOpen(false);
+    setShowTemplateSelect(false);
     setEditingId(null);
     setFormData({ title: "", category: "other", fields: [{ label: "", value: "" }], notes: "" });
     if (isNew) router.replace("/vault/personal");
+  }
+
+  function selectTemplate(templateKey: string) {
+    const tmpl = templates[templateKey];
+    if (tmpl) {
+      setFormData({
+        title: "",
+        category: templateKey,
+        fields: tmpl.fields.map((f) => ({ ...f })),
+        notes: "",
+      });
+    }
+    setShowTemplateSelect(false);
+    setDialogOpen(true);
   }
 
   function toggleVisibility(id: string) {
@@ -217,7 +323,7 @@ export default function PersonalInfoPage() {
             Securely store IDs, bank accounts, crypto keys, and more
           </p>
         </div>
-        <Button onClick={() => setDialogOpen(true)}>
+        <Button onClick={() => { setShowTemplateSelect(true); }}>
           <Plus className="mr-1 h-4 w-4" /> Add Info
         </Button>
       </div>
@@ -256,8 +362,8 @@ export default function PersonalInfoPage() {
             .map((item) => {
               const isVisible = showFields[item.id];
               const details = visibleItems[item.id];
-              const Icon = categoryIcons[details?.category || "other"] || User;
-              const color = categoryColors[details?.category || "other"] || categoryColors.other;
+              const Icon = templates[details?.category || "other"]?.icon || Shield;
+              const color = templates[details?.category || "other"]?.color || templates.other.color;
 
               return (
                 <Card key={item.id} className="transition-shadow hover:shadow-md">
@@ -269,7 +375,7 @@ export default function PersonalInfoPage() {
                       <div className="min-w-0 flex-1">
                         <p className="font-medium">{item.title}</p>
                         <p className="text-xs text-muted-foreground">
-                          {details?.category || "Personal"} •{" "}
+                          {templates[details?.category || "other"]?.label || "Personal"} •{" "}
                           {new Date(item.updated_at).toLocaleDateString()}
                         </p>
                       </div>
@@ -326,12 +432,35 @@ export default function PersonalInfoPage() {
         </div>
       )}
 
+      {/* Template Selection Dialog */}
+      <Dialog open={showTemplateSelect} onOpenChange={(open) => { if (!open) setShowTemplateSelect(false); }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Choose a Template</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {templateList.map((tmpl) => (
+              <button
+                key={tmpl.value}
+                className="flex flex-col items-center gap-2 rounded-lg border p-4 transition-colors hover:bg-muted"
+                onClick={() => selectTemplate(tmpl.value)}
+              >
+                <div className={`flex h-10 w-10 items-center justify-center rounded-full ${tmpl.color}`}>
+                  <tmpl.icon className="h-5 w-5" />
+                </div>
+                <span className="text-sm font-medium">{tmpl.label}</span>
+              </button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={(open) => !open && resetForm()}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>
-              {editingId ? "Edit Personal Info" : "Add Personal Info"}
+              {editingId ? "Edit" : "Add"} {templates[formData.category]?.label || "Personal Info"}
             </DialogTitle>
           </DialogHeader>
           <ScrollArea className="max-h-[60vh]">
@@ -339,28 +468,10 @@ export default function PersonalInfoPage() {
               <div className="space-y-2">
                 <Label>Title</Label>
                 <Input
-                  placeholder="e.g. My Passport, Chase Bank"
+                  placeholder={`e.g. ${formData.category === "bank_card" ? "Visa Gold Card" : formData.category === "wifi_password" ? "Home WiFi" : formData.category === "api_key" ? "Stripe API" : "My Passport"}`}
                   value={formData.title}
                   onChange={(e) => setFormData((f) => ({ ...f, title: e.target.value }))}
                 />
-              </div>
-              <div className="space-y-2">
-                <Label>Category</Label>
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                  {categories.map((cat) => (
-                    <Button
-                      key={cat.value}
-                      type="button"
-                      variant={formData.category === cat.value ? "default" : "outline"}
-                      size="sm"
-                      className="justify-start gap-2"
-                      onClick={() => setFormData((f) => ({ ...f, category: cat.value }))}
-                    >
-                      <cat.icon className="h-4 w-4" />
-                      {cat.label}
-                    </Button>
-                  ))}
-                </div>
               </div>
 
               <div className="space-y-2">

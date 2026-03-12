@@ -159,7 +159,7 @@ export default function SettingsPage() {
       .select("*")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
-      .limit(50);
+      .limit(200);
 
     setSecurityLogs((data as SecurityLog[]) || []);
     setLogsLoading(false);
@@ -485,6 +485,8 @@ export default function SettingsPage() {
     account_created: "Account Created",
     vault_unlock: "Vault Unlocked",
     vault_lockout: "Failed Unlock — Lockout",
+    failed_unlock: "Failed Login Attempt",
+    login: "Account Login",
     master_password_changed: "Master Password Changed",
     item_created: "Item Created",
     item_updated: "Item Updated",
@@ -501,6 +503,8 @@ export default function SettingsPage() {
     account_created: "bg-green-500/10 text-green-600 border-green-500/20",
     vault_unlock: "bg-blue-500/10 text-blue-600 border-blue-500/20",
     vault_lockout: "bg-red-500/10 text-red-600 border-red-500/20",
+    failed_unlock: "bg-red-500/10 text-red-600 border-red-500/20",
+    login: "bg-teal-500/10 text-teal-600 border-teal-500/20",
     master_password_changed: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20",
     item_created: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
     item_updated: "bg-sky-500/10 text-sky-600 border-sky-500/20",
@@ -512,6 +516,26 @@ export default function SettingsPage() {
     hidden_vault_access: "bg-orange-500/10 text-orange-600 border-orange-500/20",
     emergency_contact_updated: "bg-pink-500/10 text-pink-600 border-pink-500/20",
   };
+
+  function parseDevice(ua: string): string {
+    if (/iPhone/i.test(ua)) return "iPhone";
+    if (/iPad/i.test(ua)) return "iPad";
+    if (/Android/i.test(ua)) return "Android";
+    if (/Windows/i.test(ua)) return "Windows";
+    if (/Macintosh|Mac OS/i.test(ua)) return "Mac";
+    if (/Linux/i.test(ua)) return "Linux";
+    if (/CrOS/i.test(ua)) return "Chromebook";
+    return "Unknown";
+  }
+
+  function parseBrowser(ua: string): string {
+    if (/Edg\//i.test(ua)) return "Edge";
+    if (/OPR\//i.test(ua)) return "Opera";
+    if (/Chrome\//i.test(ua)) return "Chrome";
+    if (/Firefox\//i.test(ua)) return "Firefox";
+    if (/Safari\//i.test(ua) && !/Chrome/i.test(ua)) return "Safari";
+    return "Unknown";
+  }
 
   const uniqueEventTypes = Array.from(new Set(securityLogs.map((l) => l.event_type)));
 
@@ -863,7 +887,52 @@ export default function SettingsPage() {
         </TabsContent>
 
         {/* Security Logs Tab */}
-        <TabsContent value="logs">
+        <TabsContent value="logs" className="space-y-4">
+          {/* Log Summary Cards */}
+          {(() => {
+            const lastLogin = securityLogs.find((l) => l.event_type === "vault_unlock");
+            const failedAttempts = securityLogs.filter((l) => l.event_type === "failed_unlock" || l.event_type === "vault_lockout");
+            const recentFailed = failedAttempts.filter((l) => {
+              const d = new Date(l.created_at);
+              return Date.now() - d.getTime() < 7 * 86400000;
+            });
+            const lastDevice = lastLogin?.user_agent ? parseDevice(lastLogin.user_agent) : "—";
+            const lastBrowser = lastLogin?.user_agent ? parseBrowser(lastLogin.user_agent) : "";
+            const lastIp = lastLogin?.ip_address || "—";
+            const lastTime = lastLogin ? new Date(lastLogin.created_at).toLocaleString() : "Never";
+
+            return (
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <Card>
+                  <CardContent className="p-4">
+                    <p className="text-xs text-muted-foreground">Last Login</p>
+                    <p className="mt-1 text-sm font-medium">{lastTime}</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4">
+                    <p className="text-xs text-muted-foreground">Last Device</p>
+                    <p className="mt-1 text-sm font-medium">{lastDevice}{lastBrowser ? ` • ${lastBrowser}` : ""}</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4">
+                    <p className="text-xs text-muted-foreground">Last IP Address</p>
+                    <p className="mt-1 font-mono text-sm font-medium">{lastIp}</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4">
+                    <p className="text-xs text-muted-foreground">Failed Attempts (7d)</p>
+                    <p className={cn("mt-1 text-sm font-medium", recentFailed.length > 0 ? "text-red-500" : "")}>
+                      {recentFailed.length}
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+            );
+          })()}
+
           <Card>
             <CardHeader>
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -921,41 +990,58 @@ export default function SettingsPage() {
                     : "No events match the current filters"}
                 </p>
               ) : (
-                <ScrollArea className="h-[400px]">
+                <ScrollArea className="h-[500px]">
                   <div className="space-y-2">
-                    {filteredLogs.map((log) => (
-                      <div
-                        key={log.id}
-                        className="flex items-start justify-between rounded-md border p-3"
-                      >
-                        <div className="flex items-start gap-3">
-                          <Badge
-                            variant="outline"
-                            className={cn(
-                              "mt-0.5 shrink-0 text-xs",
-                              eventColors[log.event_type] || "bg-gray-500/10 text-gray-600 border-gray-500/20"
-                            )}
-                          >
-                            {eventLabels[log.event_type] || log.event_type}
-                          </Badge>
-                          <div>
+                    {filteredLogs.map((log) => {
+                      const device = log.user_agent ? parseDevice(log.user_agent) : null;
+                      const browser = log.user_agent ? parseBrowser(log.user_agent) : null;
+                      const logDate = new Date(log.created_at);
+                      const now = new Date();
+                      const diffMs = now.getTime() - logDate.getTime();
+                      const diffMin = Math.floor(diffMs / 60000);
+                      const diffHr = Math.floor(diffMs / 3600000);
+                      const diffDay = Math.floor(diffMs / 86400000);
+                      let relativeTime = "";
+                      if (diffMin < 1) relativeTime = "Just now";
+                      else if (diffMin < 60) relativeTime = `${diffMin}m ago`;
+                      else if (diffHr < 24) relativeTime = `${diffHr}h ago`;
+                      else if (diffDay < 7) relativeTime = `${diffDay}d ago`;
+                      else relativeTime = logDate.toLocaleDateString();
+
+                      return (
+                        <div
+                          key={log.id}
+                          className="rounded-md border p-3"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                "shrink-0 text-xs",
+                                eventColors[log.event_type] || "bg-gray-500/10 text-gray-600 border-gray-500/20"
+                              )}
+                            >
+                              {eventLabels[log.event_type] || log.event_type}
+                            </Badge>
+                            <span className="shrink-0 text-xs text-muted-foreground" title={logDate.toLocaleString()}>
+                              {relativeTime}
+                            </span>
+                          </div>
+                          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
                             {log.ip_address && (
-                              <p className="text-xs text-muted-foreground">
-                                IP: {log.ip_address}
-                              </p>
+                              <span>IP: <span className="font-mono">{log.ip_address}</span></span>
                             )}
-                            {log.user_agent && (
-                              <p className="mt-0.5 truncate text-xs text-muted-foreground" style={{ maxWidth: 350 }}>
-                                {log.user_agent}
-                              </p>
+                            {device && (
+                              <span>Device: {device}</span>
                             )}
+                            {browser && (
+                              <span>Browser: {browser}</span>
+                            )}
+                            <span>{logDate.toLocaleString()}</span>
                           </div>
                         </div>
-                        <span className="shrink-0 text-xs text-muted-foreground">
-                          {new Date(log.created_at).toLocaleString()}
-                        </span>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </ScrollArea>
               )}
