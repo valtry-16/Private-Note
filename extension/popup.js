@@ -5,7 +5,7 @@
 
 // Supabase config — same as web app
 const SUPABASE_URL = "https://gcsbazzmtivhmuietajs.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdjc2JhenptdGl2aG11aWV0YWpzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI2NTQzMjQsImV4cCI6MjA4ODIzMDMyNH0.4p7kVPBSf6JnQFHDTq_jiqqMKbUGFM3xKBLNdEjisWQ";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdjc2JhenptdGl2aG11aWV0YWpzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5NjE3MDIsImV4cCI6MjA4ODUzNzcwMn0.g3ciFwNv6ei6BMsyWTCgsJqgQcqKIqaKhqK4GCAL5_E";
 
 let session = null;
 let masterPassword = null;
