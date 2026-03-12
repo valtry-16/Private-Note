@@ -6,6 +6,7 @@ import '../../core/encryption/vault_crypto.dart';
 import '../../models/vault_item.dart';
 import '../../state/auth_state.dart';
 import '../../state/vault_state.dart';
+import '../../widgets/share_dialog.dart';
 
 class ItemDetailScreen extends ConsumerStatefulWidget {
   final VaultItem item;
@@ -50,6 +51,9 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
             onSelected: (v) => _handleAction(v),
             itemBuilder: (_) => [
               const PopupMenuItem(value: 'edit', child: Text('Edit')),
+              if (widget.item.type == VaultItemType.password ||
+                  widget.item.type == VaultItemType.note)
+                const PopupMenuItem(value: 'share', child: Text('Share')),
               if (!widget.item.isFavorite)
                 const PopupMenuItem(
                     value: 'favorite', child: Text('Add to Favorites'))
@@ -108,9 +112,20 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
               .where((e) =>
                   e.key != 'template_type' &&
                   e.key != 'encrypted_metadata' &&
+                  e.key != 'fields' &&
                   e.value != null &&
                   e.value.toString().isNotEmpty)
               .map((e) => _buildField(e.key, e.value.toString())),
+          // Render personal info dynamic fields nicely
+          if (data['fields'] != null && data['fields'] is List)
+            ...((data['fields'] as List).map((field) {
+              final label = field['label']?.toString() ?? '';
+              final value = field['value']?.toString() ?? '';
+              if (label.isEmpty && value.isEmpty) {
+                return const SizedBox.shrink();
+              }
+              return _buildField(label, value);
+            })),
           const SizedBox(height: 16),
           Text(
             'Created ${_formatDate(widget.item.createdAt)}',
@@ -213,6 +228,9 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
       case 'edit':
         _navigate(widget.item);
         break;
+      case 'share':
+        _showShareDialog();
+        break;
       case 'favorite':
         notifier.toggleFavorite(id, true);
         break;
@@ -256,6 +274,14 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
         return; // Document editing not supported
     }
     Navigator.pushReplacementNamed(context, route, arguments: item);
+  }
+
+  void _showShareDialog() {
+    if (_decrypted == null) return;
+    showDialog(
+      context: context,
+      builder: (_) => ShareDialog(item: widget.item, decryptedData: _decrypted!),
+    );
   }
 
   void _confirmDelete(String id) {

@@ -140,68 +140,86 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       child: SafeArea(
         child: Column(
           children: [
-            const DrawerHeader(
-              decoration: BoxDecoration(color: Color(0xFF6366F1)),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+              decoration: const BoxDecoration(color: Color(0xFF6366F1)),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  Icon(Icons.shield, color: Colors.white, size: 40),
-                  SizedBox(height: 8),
-                  Text('ZeroVault',
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.shield_outlined, color: Colors.white, size: 28),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text('ZeroVault',
                       style: TextStyle(
                           color: Colors.white,
                           fontSize: 22,
                           fontWeight: FontWeight.bold)),
-                  Text('Zero-Knowledge Vault',
-                      style: TextStyle(color: Colors.white70, fontSize: 13)),
+                  const SizedBox(height: 2),
+                  Text(
+                    ref.read(authProvider).email ?? 'Zero-Knowledge Vault',
+                    style: const TextStyle(color: Colors.white70, fontSize: 13),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ],
               ),
             ),
-            _drawerItem(Icons.home, 'All Items', () {
-              ref.read(vaultItemsProvider.notifier).setFilter();
-              Navigator.pop(context);
-            }),
-            _drawerItem(Icons.star_outline, 'Favorites', () {
-              ref
-                  .read(vaultItemsProvider.notifier)
-                  .setFilter(favorites: true);
-              Navigator.pop(context);
-            }),
-            _drawerItem(Icons.folder_outlined, 'Folders', () {
-              Navigator.pop(context);
-              Navigator.pushNamed(context, '/folders');
-            }),
-            _drawerItem(Icons.label_outline, 'Tags', () {
-              Navigator.pop(context);
-              Navigator.pushNamed(context, '/tags');
-            }),
-            _drawerItem(Icons.visibility_off_outlined, 'Hidden Vault', () {
-              ref
-                  .read(vaultItemsProvider.notifier)
-                  .setFilter(hidden: true);
-              Navigator.pop(context);
-            }),
-            _drawerItem(Icons.delete_outline, 'Trash', () {
-              ref
-                  .read(vaultItemsProvider.notifier)
-                  .setFilter(trash: true);
-              Navigator.pop(context);
-            }),
-            const Divider(),
-            _drawerItem(Icons.import_export, 'Import / Export', () {
-              Navigator.pop(context);
-              Navigator.pushNamed(context, '/import-export');
-            }),
-            _drawerItem(Icons.security, 'Security Logs', () {
-              Navigator.pop(context);
-              Navigator.pushNamed(context, '/security-logs');
-            }),
-            _drawerItem(Icons.settings_outlined, 'Settings', () {
-              Navigator.pop(context);
-              Navigator.pushNamed(context, '/settings');
-            }),
-            const Spacer(),
+            Expanded(
+              child: ListView(
+                padding: EdgeInsets.zero,
+                children: [
+                  _drawerItem(Icons.home, 'All Items', () {
+                    ref.read(vaultItemsProvider.notifier).setFilter();
+                    Navigator.pop(context);
+                  }),
+                  _drawerItem(Icons.star_outline, 'Favorites', () {
+                    ref.read(vaultItemsProvider.notifier).setFilter(favorites: true);
+                    Navigator.pop(context);
+                  }),
+                  _drawerItem(Icons.folder_outlined, 'Folders', () {
+                    Navigator.pop(context);
+                    Navigator.pushNamed(context, '/folders');
+                  }),
+                  _drawerItem(Icons.label_outline, 'Tags', () {
+                    Navigator.pop(context);
+                    Navigator.pushNamed(context, '/tags');
+                  }),
+                  _drawerItem(Icons.health_and_safety_outlined, 'Password Health', () {
+                    Navigator.pop(context);
+                    Navigator.pushNamed(context, '/password-health');
+                  }),
+                  _drawerItem(Icons.visibility_off_outlined, 'Hidden Vault', () {
+                    ref.read(vaultItemsProvider.notifier).setFilter(hidden: true);
+                    Navigator.pop(context);
+                  }),
+                  _drawerItem(Icons.delete_outline, 'Trash', () {
+                    ref.read(vaultItemsProvider.notifier).setFilter(trash: true);
+                    Navigator.pop(context);
+                  }),
+                  const Divider(),
+                  _drawerItem(Icons.import_export, 'Import / Export', () {
+                    Navigator.pop(context);
+                    Navigator.pushNamed(context, '/import-export');
+                  }),
+                  _drawerItem(Icons.security, 'Security Logs', () {
+                    Navigator.pop(context);
+                    Navigator.pushNamed(context, '/security-logs');
+                  }),
+                  _drawerItem(Icons.settings_outlined, 'Settings', () {
+                    Navigator.pop(context);
+                    Navigator.pushNamed(context, '/settings');
+                  }),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
             _drawerItem(Icons.logout, 'Sign Out', () {
               ref.read(authProvider.notifier).signOut();
               Navigator.pop(context);

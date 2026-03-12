@@ -17,6 +17,7 @@ import 'screens/settings_screen.dart';
 import 'screens/change_password_screen.dart';
 import 'screens/security_logs_screen.dart';
 import 'screens/import_export_screen.dart';
+import 'screens/password_health_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -60,6 +61,7 @@ class ZeroVaultApp extends ConsumerWidget {
           '/change-password': (_) => const ChangePasswordScreen(),
           '/security-logs': (_) => const SecurityLogsScreen(),
           '/import-export': (_) => const ImportExportScreen(),
+          '/password-health': (_) => const PasswordHealthScreen(),
         };
 
         final builder = routes[settings.name];
