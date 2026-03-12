@@ -58,8 +58,10 @@ class _ImportExportScreenState extends ConsumerState<ImportExportScreen> {
       final file = File('${dir.path}/zerovault_export.zvault');
       await file.writeAsString(zvault);
 
-      await Share.shareXFiles([XFile(file.path)],
-          text: 'ZeroVault Export');
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        text: 'ZeroVault Export',
+      );
 
       await SupabaseService.logSecurityEvent('export');
       setState(() => _isExporting = false);
