@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/encryption/vault_crypto.dart';
+import '../../core/theme.dart';
 import '../../models/vault_item.dart';
 import '../../state/auth_state.dart';
 import '../../state/vault_state.dart';
@@ -126,15 +127,40 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
               }
               return _buildField(label, value);
             })),
-          const SizedBox(height: 16),
-          Text(
-            'Created ${_formatDate(widget.item.createdAt)}',
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 12),
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceLight,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: AppColors.border, width: 0.5),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Created ${_formatDate(widget.item.createdAt)}',
+                        style: const TextStyle(
+                            color: AppColors.textMuted, fontSize: 12),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Updated ${_formatDate(widget.item.updatedAt)}',
+                        style: const TextStyle(
+                            color: AppColors.textMuted, fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.schedule_outlined,
+                    size: 16, color: AppColors.textMuted),
+              ],
+            ),
           ),
-          Text(
-            'Updated ${_formatDate(widget.item.updatedAt)}',
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 12),
-          ),
+          const SizedBox(height: 24),
         ],
       ),
     );
@@ -144,19 +170,25 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
     final isSecret = _isSecretField(key);
     final revealed = _revealed[key] ?? false;
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceLight,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border, width: 0.5),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               _formatLabel(key),
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.white.withValues(alpha: 0.5),
-                fontWeight: FontWeight.w500,
+              style: const TextStyle(
+                fontSize: 11,
+                color: AppColors.textMuted,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.5,
               ),
             ),
             const SizedBox(height: 6),
@@ -164,20 +196,34 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
               children: [
                 Expanded(
                   child: Text(
-                    isSecret && !revealed ? '••••••••' : value,
-                    style: const TextStyle(fontSize: 15),
+                    isSecret && !revealed ? '••••••••••••' : value,
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: isSecret && !revealed
+                          ? AppColors.textMuted
+                          : AppColors.textPrimary,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: isSecret && !revealed ? 2 : 0,
+                    ),
                   ),
                 ),
                 if (isSecret)
                   IconButton(
                     icon: Icon(
-                        revealed ? Icons.visibility_off : Icons.visibility,
-                        size: 20),
-                    onPressed: () =>
-                        setState(() => _revealed[key] = !revealed),
+                      revealed
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
+                      size: 18,
+                      color: AppColors.textSecondary,
+                    ),
+                    onPressed: () => setState(() => _revealed[key] = !revealed),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                        minWidth: 36, minHeight: 36),
                   ),
                 IconButton(
-                  icon: const Icon(Icons.copy, size: 20),
+                  icon: const Icon(Icons.copy_outlined,
+                      size: 18, color: AppColors.textSecondary),
                   onPressed: () {
                     Clipboard.setData(ClipboardData(text: value));
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -185,6 +231,9 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                           content: Text('${_formatLabel(key)} copied')),
                     );
                   },
+                  padding: EdgeInsets.zero,
+                  constraints:
+                      const BoxConstraints(minWidth: 36, minHeight: 36),
                 ),
               ],
             ),

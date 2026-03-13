@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/encryption/vault_crypto.dart';
+import '../core/theme.dart';
 import '../models/vault_item.dart';
 import '../screens/vault/item_detail_screen.dart';
 
@@ -27,89 +28,49 @@ class _VaultItemCardState extends State<VaultItemCard> {
   }
 
   Future<void> _decryptTitle() async {
-    final encTitle =
-        widget.item.metadata?['encrypted_title'] as String?;
+    final encTitle = widget.item.metadata?['encrypted_title'] as String?;
     if (encTitle != null && widget.masterPassword.isNotEmpty) {
       try {
-        final t = await VaultCrypto.decrypt(encTitle, widget.masterPassword);
-        if (mounted) setState(() => _title = t.isEmpty ? 'Untitled' : t);
+        final t =
+            await VaultCrypto.decrypt(encTitle, widget.masterPassword);
+        if (mounted) {
+          setState(() => _title = t.isEmpty ? 'Untitled' : t);
+        }
       } catch (_) {
         if (mounted) setState(() => _title = 'Untitled');
       }
     } else {
-      setState(() => _title = 'Untitled');
+      if (mounted) setState(() => _title = 'Untitled');
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: _typeColor().withValues(alpha: 0.15),
-          child: Icon(_typeIcon(), color: _typeColor(), size: 20),
-        ),
-        title: Text(_title,
-            style: const TextStyle(fontWeight: FontWeight.w500),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis),
-        subtitle: Row(
-          children: [
-            Text(
-              _typeLabel(),
-              style: TextStyle(
-                  fontSize: 12, color: Colors.white.withValues(alpha: 0.4)),
-            ),
-            if (widget.item.isFavorite) ...[
-              const SizedBox(width: 6),
-              Icon(Icons.star, size: 14, color: Colors.amber.shade400),
-            ],
-            if (widget.item.isPinned) ...[
-              const SizedBox(width: 4),
-              const Icon(Icons.push_pin, size: 14, color: Color(0xFF6366F1)),
-            ],
-          ],
-        ),
-        trailing: Icon(Icons.chevron_right,
-            color: Colors.white.withValues(alpha: 0.3)),
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => ItemDetailScreen(item: widget.item),
-          ),
-        ),
-      ),
-    );
+  Color get _typeColor {
+    switch (widget.item.type) {
+      case VaultItemType.note:
+        return AppColors.noteColor;
+      case VaultItemType.password:
+        return AppColors.passwordColor;
+      case VaultItemType.document:
+        return AppColors.documentColor;
+      case VaultItemType.personal:
+        return AppColors.personalColor;
+    }
   }
 
-  IconData _typeIcon() {
+  IconData get _typeIcon {
     switch (widget.item.type) {
       case VaultItemType.note:
         return Icons.note_alt_outlined;
       case VaultItemType.password:
-        return Icons.key;
+        return Icons.key_rounded;
       case VaultItemType.document:
-        return Icons.description;
+        return Icons.description_outlined;
       case VaultItemType.personal:
-        return Icons.person;
+        return Icons.person_outline_rounded;
     }
   }
 
-  Color _typeColor() {
-    switch (widget.item.type) {
-      case VaultItemType.note:
-        return Colors.blue;
-      case VaultItemType.password:
-        return Colors.green;
-      case VaultItemType.document:
-        return Colors.orange;
-      case VaultItemType.personal:
-        return Colors.purple;
-    }
-  }
-
-  String _typeLabel() {
+  String get _typeLabel {
     switch (widget.item.type) {
       case VaultItemType.note:
         return 'Note';
@@ -120,5 +81,119 @@ class _VaultItemCardState extends State<VaultItemCard> {
       case VaultItemType.personal:
         return 'Personal';
     }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _typeColor;
+    return Material(
+      color: AppColors.surfaceLight,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (_) => ItemDetailScreen(item: widget.item)),
+        ),
+        borderRadius: BorderRadius.circular(14),
+        splashColor: color.withValues(alpha: 0.08),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppColors.border, width: 0.5),
+          ),
+          child: Row(
+            children: [
+              // Colored left accent bar
+              Container(
+                width: 4,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: color,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(14),
+                    bottomLeft: Radius.circular(14),
+                  ),
+                ),
+              ),
+              // Icon
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(_typeIcon, color: color, size: 20),
+                ),
+              ),
+              // Title + subtitle
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _title,
+                        style: const TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: color.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              _typeLabel,
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: color,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          if (widget.item.isFavorite) ...[
+                            const SizedBox(width: 6),
+                            const Icon(Icons.star_rounded,
+                                size: 14, color: Color(0xFFF59E0B)),
+                          ],
+                          if (widget.item.isPinned) ...[
+                            const SizedBox(width: 4),
+                            const Icon(Icons.push_pin_rounded,
+                                size: 14, color: AppColors.primary),
+                          ],
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              // Trailing arrow
+              Padding(
+                padding: const EdgeInsets.only(right: 14),
+                child: Icon(
+                  Icons.chevron_right_rounded,
+                  color: AppColors.textMuted,
+                  size: 20,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

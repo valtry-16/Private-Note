@@ -8,6 +8,7 @@ import '../../core/supabase/supabase_service.dart';
 import '../../models/vault_item.dart';
 import '../../state/auth_state.dart';
 import '../../state/vault_state.dart';
+import '../../core/theme.dart';
 
 class AddDocumentScreen extends ConsumerStatefulWidget {
   const AddDocumentScreen({super.key});
@@ -179,12 +180,12 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFF6366F1).withValues(alpha: 0.1),
+                color: AppColors.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Row(
                 children: [
-                  Icon(Icons.shield, color: Color(0xFF6366F1), size: 20),
+                  Icon(Icons.shield, color: AppColors.primary, size: 20),
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(

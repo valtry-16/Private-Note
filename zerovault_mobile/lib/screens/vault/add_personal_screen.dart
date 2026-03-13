@@ -5,6 +5,7 @@ import '../../models/vault_item.dart';
 import '../../models/templates.dart';
 import '../../state/auth_state.dart';
 import '../../state/vault_state.dart';
+import '../../core/theme.dart';
 
 class AddPersonalScreen extends ConsumerStatefulWidget {
   final VaultItem? existingItem;
@@ -222,10 +223,10 @@ class _AddPersonalScreenState extends ConsumerState<AddPersonalScreen> {
       'more_horiz': Icons.more_horiz,
     };
     return CircleAvatar(
-      backgroundColor: const Color(0xFF6366F1).withValues(alpha: 0.15),
+      backgroundColor: AppColors.primary.withValues(alpha: 0.15),
       child: Icon(
         icons[iconName] ?? Icons.more_horiz,
-        color: const Color(0xFF6366F1),
+        color: AppColors.primary,
       ),
     );
   }

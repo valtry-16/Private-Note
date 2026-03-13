@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../core/encryption/vault_crypto.dart';
 import '../core/supabase/supabase_service.dart';
+import '../core/theme.dart';
 import '../models/vault_item.dart';
 import '../state/auth_state.dart';
 import '../state/vault_state.dart';
@@ -134,103 +135,62 @@ class _ImportExportScreenState extends ConsumerState<ImportExportScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Import / Export')),
-      body: Padding(
+      appBar: AppBar(
+        title: const Text('Import / Export'),
+        backgroundColor: AppColors.surface,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(height: 1, color: AppColors.border),
+        ),
+      ),
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Row(
-                      children: [
-                        Icon(Icons.upload, color: Color(0xFF6366F1)),
-                        SizedBox(width: 8),
-                        Text('Export',
-                            style: TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Export all vault items as a .zvault file. '
-                      'Data is decrypted for portability.',
-                      style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.6), fontSize: 13),
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: _isExporting ? null : _export,
-                      child: _isExporting
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                  strokeWidth: 2, color: Colors.white))
-                          : const Text('Export .zvault'),
-                    ),
-                  ],
-                ),
-              ),
+            _buildActionCard(
+              icon: Icons.upload_rounded,
+              iconColor: AppColors.primary,
+              title: 'Export Vault',
+              description:
+                  'Export all vault items as a .zvault file. Data is decrypted for portability — handle with care.',
+              buttonLabel: 'Export .zvault',
+              isLoading: _isExporting,
+              onPressed: _export,
             ),
             const SizedBox(height: 16),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Row(
-                      children: [
-                        Icon(Icons.download, color: Color(0xFF6366F1)),
-                        SizedBox(width: 8),
-                        Text('Import',
-                            style: TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Import from a .zvault export file or compatible JSON. '
-                      'Items will be encrypted with your current master password.',
-                      style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.6), fontSize: 13),
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: _isImporting ? null : _import,
-                      child: _isImporting
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                  strokeWidth: 2, color: Colors.white))
-                          : const Text('Import File'),
-                    ),
-                  ],
-                ),
-              ),
+            _buildActionCard(
+              icon: Icons.download_rounded,
+              iconColor: AppColors.success,
+              title: 'Import Items',
+              description:
+                  'Import from a .zvault export file or compatible JSON. Items will be encrypted with your current master password.',
+              buttonLabel: 'Import File',
+              isLoading: _isImporting,
+              onPressed: _import,
             ),
             const SizedBox(height: 16),
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: Colors.orange.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
+                color: AppColors.warningBg,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                    color: AppColors.warning.withValues(alpha: 0.3)),
               ),
-              child: const Row(
+              child: Row(
                 children: [
-                  Icon(Icons.warning_amber, color: Colors.orange, size: 20),
-                  SizedBox(width: 8),
-                  Expanded(
+                  const Icon(Icons.warning_amber_rounded,
+                      color: AppColors.warning, size: 22),
+                  const SizedBox(width: 12),
+                  const Expanded(
                     child: Text(
                       'Exported files contain decrypted data. '
-                      'Handle with care and delete after use.',
-                      style: TextStyle(fontSize: 12, color: Colors.white70),
+                      'Handle with care and delete after transferring.',
+                      style: TextStyle(
+                          fontSize: 13,
+                          color: AppColors.textSecondary,
+                          height: 1.4),
                     ),
                   ),
                 ],
@@ -238,6 +198,77 @@ class _ImportExportScreenState extends ConsumerState<ImportExportScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildActionCard({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String description,
+    required String buttonLabel,
+    required bool isLoading,
+    required VoidCallback onPressed,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceLight,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border, width: 0.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: iconColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(11),
+                ),
+                child: Icon(icon, color: iconColor, size: 22),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            description,
+            style: const TextStyle(
+                color: AppColors.textSecondary, fontSize: 13, height: 1.5),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: isLoading ? null : onPressed,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: iconColor,
+                foregroundColor: Colors.white,
+                minimumSize: const Size(double.infinity, 48),
+              ),
+              child: isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white))
+                  : Text(buttonLabel),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/encryption/vault_crypto.dart';
+import '../core/theme.dart';
 import '../models/vault_item.dart';
 import '../state/auth_state.dart';
 import '../state/vault_state.dart';
@@ -97,27 +98,49 @@ class _PasswordHealthScreenState extends ConsumerState<PasswordHealthScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Password Health')),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primary))
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [
                 _buildScoreCard(),
                 const SizedBox(height: 20),
-                if (_weak.isNotEmpty) _buildSection('Weak Passwords', _weak, Colors.red, Icons.warning_amber),
-                if (_reused.isNotEmpty) _buildSection('Reused Passwords', _reused, Colors.orange, Icons.copy),
-                if (_old.isNotEmpty) _buildSection('Old Passwords', _old, Colors.amber, Icons.schedule),
+                if (_weak.isNotEmpty)
+                  _buildSection('Weak Passwords', _weak, AppColors.error, Icons.warning_amber_rounded),
+                if (_reused.isNotEmpty)
+                  _buildSection('Reused Passwords', _reused, AppColors.warning, Icons.copy_rounded),
+                if (_old.isNotEmpty)
+                  _buildSection('Old Passwords', _old, const Color(0xFFF59E0B), Icons.schedule_rounded),
                 if (_weak.isEmpty && _reused.isEmpty && _old.isEmpty)
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        children: [
-                          const Icon(Icons.check_circle, color: Colors.green, size: 48),
-                          const SizedBox(height: 12),
-                          Text('All passwords look healthy!',
-                              style: Theme.of(context).textTheme.titleMedium),
-                        ],
-                      ),
+                  Container(
+                    padding: const EdgeInsets.all(28),
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceLight,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.border, width: 0.5),
+                    ),
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 64,
+                          height: 64,
+                          decoration: BoxDecoration(
+                            color: AppColors.success.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Icon(Icons.verified_rounded, color: AppColors.success, size: 34),
+                        ),
+                        const SizedBox(height: 14),
+                        Text('All passwords look healthy!',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                color: Colors.white, fontWeight: FontWeight.w700)),
+                        const SizedBox(height: 6),
+                        const Text(
+                          'Keep it up — your vault is in great shape.',
+                          style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
                     ),
                   ),
               ],
@@ -126,53 +149,51 @@ class _PasswordHealthScreenState extends ConsumerState<PasswordHealthScreen> {
   }
 
   Widget _buildScoreCard() {
-    final color = _healthScore >= 80
-        ? Colors.green
-        : _healthScore >= 50
-            ? Colors.orange
-            : Colors.red;
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            Stack(
-              alignment: Alignment.center,
-              children: [
-                SizedBox(
-                  width: 120,
-                  height: 120,
-                  child: CircularProgressIndicator(
-                    value: _healthScore / 100,
-                    strokeWidth: 10,
-                    backgroundColor: color.withValues(alpha: 0.15),
-                    valueColor: AlwaysStoppedAnimation(color),
-                  ),
+    final color = _healthScore >= 80 ? AppColors.success : _healthScore >= 50 ? AppColors.warning : AppColors.error;
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceLight,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border, width: 0.5),
+      ),
+      child: Column(
+        children: [
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              SizedBox(
+                width: 120,
+                height: 120,
+                child: CircularProgressIndicator(
+                  value: _healthScore / 100,
+                  strokeWidth: 10,
+                  backgroundColor: color.withValues(alpha: 0.12),
+                  valueColor: AlwaysStoppedAnimation(color),
                 ),
-                Column(
-                  children: [
-                    Text('$_healthScore',
-                        style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: color)),
-                    Text('/ 100', style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.5))),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Text('Password Health Score',
-                style: TextStyle(fontSize: 16, color: Colors.white.withValues(alpha: 0.7))),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _statChip('${_weak.length}', 'Weak', Colors.red),
-                _statChip('${_reused.length}', 'Reused', Colors.orange),
-                _statChip('${_old.length}', 'Old', Colors.amber),
-              ],
-            ),
-          ],
-        ),
+              ),
+              Column(
+                children: [
+                  Text('$_healthScore',
+                      style: TextStyle(fontSize: 36, fontWeight: FontWeight.w800, color: color)),
+                  const Text('/ 100', style: TextStyle(fontSize: 14, color: AppColors.textMuted)),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          const Text('Password Health Score',
+              style: TextStyle(fontSize: 15, color: AppColors.textSecondary, fontWeight: FontWeight.w500)),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _statChip('${_weak.length}', 'Weak', AppColors.error),
+              _statChip('${_reused.length}', 'Reused', AppColors.warning),
+              _statChip('${_old.length}', 'Old', const Color(0xFFF59E0B)),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -181,15 +202,16 @@ class _PasswordHealthScreenState extends ConsumerState<PasswordHealthScreen> {
     return Column(
       children: [
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
           decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(12),
+            color: color.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: color.withValues(alpha: 0.2)),
           ),
-          child: Text(count, style: TextStyle(fontWeight: FontWeight.bold, color: color)),
+          child: Text(count, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18, color: color)),
         ),
-        const SizedBox(height: 4),
-        Text(label, style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.5))),
+        const SizedBox(height: 5),
+        Text(label, style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
       ],
     );
   }
@@ -205,12 +227,12 @@ class _PasswordHealthScreenState extends ConsumerState<PasswordHealthScreen> {
               Icon(icon, size: 18, color: color),
               const SizedBox(width: 6),
               Text(title,
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: color)),
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: color)),
               const SizedBox(width: 6),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.15),
+                  color: color.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text('${issues.length}', style: TextStyle(fontSize: 12, color: color)),
